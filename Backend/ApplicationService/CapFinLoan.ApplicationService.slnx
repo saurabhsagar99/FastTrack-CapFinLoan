@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="CapFinLoan.Application.API/CapFinLoan.Application.API.csproj" />
+  <Project Path="CapFinLoan.Application.Application/CapFinLoan.Application.Application.csproj" Id="701c80b4-bc7c-40bf-9a09-4bb26040a170" />
+  <Project Path="CapFinLoan.Application.Domain/CapFinLoan.Application.Domain.csproj" Id="d8c5b505-3759-4c62-b45f-6eb43f0d1765" />
+  <Project Path="CapFinLoan.Application.Infrastructure/CapFinLoan.Application.Infrastructure.csproj" Id="07e27544-ab43-424c-a9c5-57db3b217723" />
+  <Project Path="CapFinLoan.Application.Persistence/CapFinLoan.Application.Persistence.csproj" Id="10e733a3-b4f4-4bee-886b-29efb4a53db0" />
+</Solution>
