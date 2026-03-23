@@ -6,4 +6,3 @@ node_modules/
 *.user
 *.log
 .github/
-Migrations/
