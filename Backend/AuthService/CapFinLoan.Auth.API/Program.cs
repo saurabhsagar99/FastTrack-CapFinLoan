@@ -1,4 +1,8 @@
+using CapFinLoan.Auth.API.Extensions;
+using CapFinLoan.Auth.API.Middleware;
+
 namespace CapFinLoan.Auth.API
+
 {
 	public class Program
 	{
@@ -9,16 +13,23 @@ namespace CapFinLoan.Auth.API
 			// Add services to the container.
 
 			builder.Services.AddControllers();
+			builder.Services.AddEndpointsApiExplorer();
+			builder.Services.AddSwaggerGen();
+			builder.Services.AddApplicationServices(builder.Configuration);
 
 			var app = builder.Build();
 
 			// Configure the HTTP request pipeline.
 
+			if (app.Environment.IsDevelopment())
+			{
+				app.UseSwagger();
+				app.UseSwaggerUI();
+			}
+			app.UseMiddleware<ExceptionMiddleware>();
+			app.UseAuthentication();
 			app.UseAuthorization();
-
-
 			app.MapControllers();
-
 			app.Run();
 		}
 	}
