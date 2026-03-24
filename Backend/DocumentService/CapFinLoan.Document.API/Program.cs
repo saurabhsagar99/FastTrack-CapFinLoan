@@ -1,3 +1,6 @@
+using CapFinLoan.Document.API.Extensions;
+using CapFinLoan.Document.API.Middleware;
+
 namespace CapFinLoan.Document.API
 {
 	public class Program
@@ -8,11 +11,24 @@ namespace CapFinLoan.Document.API
 
 			// Add services to the container.
 
+			builder.Services.AddDocumentServices(builder.Configuration);
 			builder.Services.AddControllers();
+			builder.Services.AddEndpointsApiExplorer();
+			builder.Services.AddSwaggerGen();
 
 			var app = builder.Build();
 
+			app.UseMiddleware<ExceptionMiddleware>();
+
 			// Configure the HTTP request pipeline.
+
+			if (app.Environment.IsDevelopment())
+			{
+				app.UseSwagger();
+				app.UseSwaggerUI();
+			}
+
+			app.UseAuthentication();
 
 			app.UseAuthorization();
 
