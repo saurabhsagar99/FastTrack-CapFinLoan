@@ -16,6 +16,7 @@ public class AdminDbContext : DbContext
 		modelBuilder.Entity<Decision>(e =>
 		{
 			e.HasKey(d => d.Id);
+			e.HasIndex(d => d.ApplicationId).IsUnique();
 			e.Property(d => d.Status).HasMaxLength(50).IsRequired();
 			e.Property(d => d.AdminEmail).HasMaxLength(200).IsRequired();
 			e.Property(d => d.Remarks).HasMaxLength(1000);

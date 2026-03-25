@@ -31,9 +31,8 @@ namespace CapFinLoan.Admin.API.Controllers
 		[HttpPost("applications/{id}/decision")]
 		public async Task<IActionResult> MakeDecision(int id, [FromBody] DecisionDto dto)
 		{
-			dto.ApplicationId = id;
 			var adminEmail = User.FindFirstValue(ClaimTypes.Email) ?? "unknown";
-			var decision = await _adminService.MakeDecisionAsync(dto, adminEmail);
+			var decision = await _adminService.MakeDecisionAsync(id, dto, adminEmail);
 			return Ok(ApiResponse<object>.Ok(decision, "Decision recorded successfully."));
 		}
 	}

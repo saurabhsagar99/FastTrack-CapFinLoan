@@ -6,7 +6,6 @@ namespace CapFinLoan.Admin.Application.DTOs
 {
 	public class DecisionDto
 	{
-		public int ApplicationId { get; set; }
 		public string Status { get; set; } = string.Empty;   
 		public string Remarks { get; set; } = string.Empty;
 		public string? SanctionTerms { get; set; }

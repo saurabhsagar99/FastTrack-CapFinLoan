@@ -20,9 +20,19 @@ namespace CapFinLoan.Admin.Persistence.Repositories
 		public async Task<IEnumerable<Decision>> GetAllAsync() =>
 			await _context.Decisions.OrderByDescending(d => d.DecisionDate).ToListAsync();
 
+		public async Task<Decision?> GetByApplicationIdAsync(int applicationId) =>
+			await _context.Decisions.FirstOrDefaultAsync(d => d.ApplicationId == applicationId);
+
 		public async Task<Decision> AddAsync(Decision decision)
 		{
 			_context.Decisions.Add(decision);
+			await _context.SaveChangesAsync();
+			return decision;
+		}
+
+		public async Task<Decision> UpdateAsync(Decision decision)
+		{
+			_context.Decisions.Update(decision);
 			await _context.SaveChangesAsync();
 			return decision;
 		}

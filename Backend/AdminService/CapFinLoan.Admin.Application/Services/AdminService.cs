@@ -26,11 +26,24 @@ public class AdminService : IAdminService
 		});
 	}
 
-	public async Task<Decision> MakeDecisionAsync(DecisionDto dto, string adminEmail)
+	public async Task<Decision> MakeDecisionAsync(int applicationId, DecisionDto dto, string adminEmail)
 	{
+		var existingDecision = await _repository.GetByApplicationIdAsync(applicationId);
+
+		if (existingDecision is not null)
+		{
+			existingDecision.Status = dto.Status;
+			existingDecision.Remarks = dto.Remarks;
+			existingDecision.SanctionTerms = dto.SanctionTerms;
+			existingDecision.AdminEmail = adminEmail;
+			existingDecision.DecisionDate = DateTime.UtcNow;
+
+			return await _repository.UpdateAsync(existingDecision);
+		}
+
 		var decision = new Decision
 		{
-			ApplicationId = dto.ApplicationId,
+			ApplicationId = applicationId,
 			Status = dto.Status,
 			Remarks = dto.Remarks,
 			SanctionTerms = dto.SanctionTerms,
