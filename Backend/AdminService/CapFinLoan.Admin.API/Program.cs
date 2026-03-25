@@ -1,3 +1,6 @@
+using CapFinLoan.Admin.API.Extensions;
+using CapFinLoan.Admin.API.Middleware;
+
 namespace CapFinLoan.Admin.API
 {
 	public class Program
@@ -10,9 +13,18 @@ namespace CapFinLoan.Admin.API
 
 			builder.Services.AddControllers();
 
+			builder.Services.AddEndpointsApiExplorer();
+			builder.Services.AddSwaggerGen();
+			builder.Services.AddApplicationServices(builder.Configuration);
+
 			var app = builder.Build();
 
 			// Configure the HTTP request pipeline.
+
+			app.UseSwagger();
+			app.UseSwaggerUI();
+			app.UseMiddleware<ExceptionMiddleware>();
+			app.UseAuthentication();
 
 			app.UseAuthorization();
 

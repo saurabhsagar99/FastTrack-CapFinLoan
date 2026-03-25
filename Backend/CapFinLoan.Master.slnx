@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/AdminService/">
+    <Project Path="AdminService/CapFinLoan.Admin.API/CapFinLoan.Admin.API.csproj" />
+  </Folder>
+  <Folder Name="/ApiGateway/">
+    <Project Path="ApiGateway/CapFinLoan.Gateway.API/CapFinLoan.Gateway.API.csproj" />
+  </Folder>
+  <Folder Name="/ApplicationService/">
+    <Project Path="ApplicationService/CapFinLoan.Application.API/CapFinLoan.Application.API.csproj" />
+  </Folder>
+  <Folder Name="/AuthService/">
+    <Project Path="AuthService/CapFinLoan.Auth.API/CapFinLoan.Auth.API.csproj" />
+  </Folder>
+  <Folder Name="/DocumentService/">
+    <Project Path="DocumentService/CapFinLoan.Document.API/CapFinLoan.Document.API.csproj" />
+  </Folder>
+</Solution>
