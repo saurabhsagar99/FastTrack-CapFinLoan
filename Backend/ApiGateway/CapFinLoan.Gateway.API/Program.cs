@@ -1,25 +1,66 @@
-namespace CapFinLoan.Gateway.API
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Ocelot.DependencyInjection;
+using Ocelot.Middleware;
+using System.Text;
+
+public class Program
 {
-	public class Program
+	private static async Task Main(string[] args)
 	{
-		public static void Main(string[] args)
+		var builder = WebApplication.CreateBuilder(args);
+
+		builder.Configuration
+			.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
+
+		var jwtSettings = builder.Configuration.GetSection("Jwt");
+		var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
+
+		builder.Services
+			.AddAuthentication(options =>
+			{
+				options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+				options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+			})
+			.AddJwtBearer("Bearer", options =>
+			{
+				options.RequireHttpsMetadata = false;
+				options.SaveToken = true;
+				options.TokenValidationParameters = new TokenValidationParameters
+				{
+					ValidateIssuerSigningKey = true,
+					IssuerSigningKey = new SymmetricSecurityKey(key),
+					ValidateIssuer = true,
+					ValidIssuer = jwtSettings["Issuer"],
+					ValidateAudience = true,
+					ValidAudience = jwtSettings["Audience"],
+					ValidateLifetime = true,
+					ClockSkew = TimeSpan.Zero
+				};
+			});
+
+		builder.Services.AddCors(options =>
 		{
-			var builder = WebApplication.CreateBuilder(args);
+			options.AddPolicy("AllowReact", policy =>
+			{
+				policy.WithOrigins(
+						"http://localhost:5173"
+					  )
+					  .AllowAnyHeader()
+					  .AllowAnyMethod()
+					  .AllowCredentials();
+			});
+		});
 
-			// Add services to the container.
+		builder.Services.AddOcelot(builder.Configuration);
 
-			builder.Services.AddControllers();
+		var app = builder.Build();
 
-			var app = builder.Build();
+		app.UseCors("AllowReact");
+		app.UseAuthentication();
+		app.UseAuthorization();
 
-			// Configure the HTTP request pipeline.
-
-			app.UseAuthorization();
-
-
-			app.MapControllers();
-
-			app.Run();
-		}
+		await app.UseOcelot();
+		await app.RunAsync();
 	}
 }
