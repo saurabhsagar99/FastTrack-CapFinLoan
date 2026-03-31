@@ -23,6 +23,14 @@ namespace CapFinLoan.Document.API.Middleware
 			{
 				await WriteError(context, HttpStatusCode.NotFound, ex.Message);
 			}
+			catch (FileNotFoundException ex)
+			{
+				await WriteError(context, HttpStatusCode.NotFound, ex.Message ?? "File not found.");
+			}
+			catch (UnauthorizedAccessException ex)
+			{
+				await WriteError(context, HttpStatusCode.Unauthorized, ex.Message);
+			}
 			catch (Exception ex)
 			{
 				await WriteError(context, HttpStatusCode.InternalServerError, "An unexpected error occurred: " + ex.Message);

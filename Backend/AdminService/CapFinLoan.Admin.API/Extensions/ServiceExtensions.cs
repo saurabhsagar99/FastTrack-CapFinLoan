@@ -19,6 +19,7 @@ public static class ServiceExtensions
 			options.UseSqlServer(config.GetConnectionString("AdminDb")));
 
 		services.AddScoped<IDecisionRepository, DecisionRepository>();
+		services.AddScoped<IUserRepository, UserRepository>();
 
 		services.AddScoped<IAdminService, AdminService>();
 

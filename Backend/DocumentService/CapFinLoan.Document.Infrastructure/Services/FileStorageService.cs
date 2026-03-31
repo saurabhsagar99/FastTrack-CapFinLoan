@@ -7,9 +7,9 @@ namespace CapFinLoan.Document.Infrastructure.Services
 	{
 		private readonly string _basePath;
 
-		public LocalFileStorageService(IConfiguration configuration)
+		public LocalFileStorageService(string basePath)
 		{
-			_basePath = configuration["FileStorage:BasePath"] ?? "Uploads";
+			_basePath = basePath;
 		}
 
 		public async Task<string> SaveFileAsync(Stream fileStream, string fileName, string folder)

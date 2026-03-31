@@ -102,6 +102,24 @@ namespace CapFinLoan.Application.Application.Services
 			return ApiResponse<ApplicationResponseDto>.Ok(MapToDto(updated), "Application submitted successfully.");
 		}
 
+		public async Task<ApiResponse<ApplicationResponseDto>> UpdateStatusByAdminAsync(int id, UpdateApplicationStatusDto dto)
+		{
+			var application = await _repository.GetByIdAsync(id);
+
+			if (application == null)
+				return ApiResponse<ApplicationResponseDto>.Fail("Application not found.");
+
+			if (!Enum.TryParse<ApplicationStatus>(dto.Status, true, out var nextStatus))
+				return ApiResponse<ApplicationResponseDto>.Fail("Invalid status value.");
+
+			application.Status = nextStatus;
+			application.StatusNote = dto.StatusNote;
+			application.UpdatedAt = DateTime.UtcNow;
+
+			var updated = await _repository.UpdateAsync(application);
+			return ApiResponse<ApplicationResponseDto>.Ok(MapToDto(updated), "Application status updated successfully.");
+		}
+
 		public async Task<ApiResponse<IEnumerable<ApplicationResponseDto>>> GetMyApplicationsAsync(string applicantId)
 		{
 			var applications = await _repository.GetByApplicantIdAsync(applicantId);

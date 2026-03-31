@@ -11,6 +11,7 @@ namespace CapFinLoan.Application.Application.Interfaces
 		Task<ApiResponse<ApplicationResponseDto>> CreateDraftAsync(string applicantId, CreateApplicationDto dto);
 		Task<ApiResponse<ApplicationResponseDto>> UpdateDraftAsync(int id, string applicantId, UpdateApplicationDto dto);
 		Task<ApiResponse<ApplicationResponseDto>> SubmitApplicationAsync(int id, string applicantId);
+		Task<ApiResponse<ApplicationResponseDto>> UpdateStatusByAdminAsync(int id, UpdateApplicationStatusDto dto);
 		Task<ApiResponse<IEnumerable<ApplicationResponseDto>>> GetMyApplicationsAsync(string applicantId);
 		Task<ApiResponse<ApplicationResponseDto>> GetByIdAsync(int id);
 		Task<ApiResponse<IEnumerable<ApplicationResponseDto>>> GetAllAsync();

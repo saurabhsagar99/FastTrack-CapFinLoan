@@ -28,4 +28,11 @@ namespace CapFinLoan.Document.Application.DTOs
 		public bool IsVerified { get; set; }
 		public string? Remarks { get; set; }
 	}
+
+	public class DocumentFileDto
+	{
+		public string FileName { get; set; } = string.Empty;
+		public string ContentType { get; set; } = "application/octet-stream";
+		public byte[] Content { get; set; } = Array.Empty<byte>();
+	}
 }

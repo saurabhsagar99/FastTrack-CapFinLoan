@@ -10,6 +10,7 @@ namespace CapFinLoan.Document.Application.Interfaces
 		Task<DocumentResponseDto> UploadDocumentAsync(UploadDocumentDto dto, string userId);
 		Task<IEnumerable<DocumentResponseDto>> GetDocumentsByApplicationAsync(int applicationId);
 		Task<DocumentResponseDto> VerifyDocumentAsync(int docId, VerifyDocumentDto dto);
+		Task<DocumentFileDto> GetDocumentFileAsync(int docId, string userId, bool isAdmin);
 		Task<bool> DeleteDocumentAsync(int docId, string userId);
 	}
 }

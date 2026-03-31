@@ -33,6 +33,17 @@ namespace CapFinLoan.Document.Application.Services
 				dto.File.FileName,
 				$"app_{dto.ApplicationId}");
 
+			// Keep only one document per application for this user by replacing any existing uploads.
+			var existingDocs = (await _repository.GetByApplicationIdAsync(dto.ApplicationId))
+				.Where(d => d.UserId == userId)
+				.ToList();
+
+			foreach (var existingDoc in existingDocs)
+			{
+				_fileStorage.DeleteFile(existingDoc.FilePath);
+				await _repository.DeleteAsync(existingDoc);
+			}
+
 			var entity = new DocumentEntity
 			{
 				ApplicationId = dto.ApplicationId,
@@ -68,6 +79,44 @@ namespace CapFinLoan.Document.Application.Services
 			return MapToDto(doc);
 		}
 
+		public async Task<DocumentFileDto> GetDocumentFileAsync(int docId, string userId, bool isAdmin)
+		{
+			var doc = isAdmin
+				? await _repository.GetByIdAsync(docId)
+				: await _repository.GetByIdAndUserAsync(docId, userId);
+
+			if (doc == null)
+				throw new KeyNotFoundException($"Document {docId} not found.");
+
+			// Try absolute path first, then relative for backward compatibility
+			string filePath = doc.FilePath;
+			if (!File.Exists(filePath))
+			{
+				// If absolute path doesn't work, try as relative path from current directory
+				var relativePath = Path.GetFileName(filePath);
+				if (!string.IsNullOrEmpty(relativePath))
+				{
+					// Try in Uploads folder structure
+					var appFolder = Path.GetFileName(Path.GetDirectoryName(filePath)) ?? "";
+					var altPath = Path.Combine("Uploads", appFolder, relativePath);
+					if (File.Exists(altPath))
+					{
+						filePath = altPath;
+					}
+				}
+			}
+
+			if (!File.Exists(filePath))
+				throw new FileNotFoundException("Document file not found on server.", doc.FilePath);
+
+			return new DocumentFileDto
+			{
+				FileName = doc.FileName,
+				ContentType = ResolveContentType(doc.FileType),
+				Content = await File.ReadAllBytesAsync(filePath)
+			};
+		}
+
 		public async Task<bool> DeleteDocumentAsync(int docId, string userId)
 		{
 			var doc = await _repository.GetByIdAndUserAsync(docId, userId);
@@ -88,5 +137,17 @@ namespace CapFinLoan.Document.Application.Services
 			VerificationRemarks = d.VerificationRemarks,
 			UploadedAt = d.UploadedAt
 		};
+
+		private static string ResolveContentType(string ext)
+		{
+			return ext.ToLowerInvariant() switch
+			{
+				".pdf" => "application/pdf",
+				".jpg" => "image/jpeg",
+				".jpeg" => "image/jpeg",
+				".png" => "image/png",
+				_ => "application/octet-stream"
+			};
+		}
 	}
 }

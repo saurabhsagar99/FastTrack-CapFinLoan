@@ -42,6 +42,24 @@ namespace CapFinLoan.Document.API.Controllers
 			return Ok(ApiResponse<DocumentResponseDto>.Ok(result, "Document verification updated."));
 		}
 
+		[HttpGet("{docId}/download")]
+		public async Task<IActionResult> Download(int docId)
+		{
+			var isAdmin = User.Claims.Any(c =>
+				(c.Type == ClaimTypes.Role || c.Type == "role") &&
+				string.Equals(c.Value, "ADMIN", StringComparison.OrdinalIgnoreCase));
+
+			var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+				?? User.FindFirstValue("sub")
+				?? string.Empty;
+
+			if (!isAdmin && string.IsNullOrWhiteSpace(userId))
+				return Unauthorized(ApiResponse<object>.Fail("User identity not found."));
+
+			var file = await _documentService.GetDocumentFileAsync(docId, userId, isAdmin);
+			return File(file.Content, file.ContentType, file.FileName);
+		}
+
 		[HttpDelete("{docId}")]
 		public async Task<IActionResult> Delete(int docId)
 		{

@@ -7,10 +7,12 @@ namespace CapFinLoan.Admin.Application.Services;
 public class AdminService : IAdminService
 {
 	private readonly IDecisionRepository _repository;
+	private readonly IUserRepository _userRepository;
 
-	public AdminService(IDecisionRepository repository)
+	public AdminService(IDecisionRepository repository, IUserRepository userRepository)
 	{
 		_repository = repository;
+		_userRepository = userRepository;
 	}
 
 	public async Task<IEnumerable<object>> GetApplicationQueueAsync()
@@ -61,5 +63,34 @@ public class AdminService : IAdminService
 		var rejected = await _repository.CountByStatusAsync("Rejected");
 
 		return new { Total = total, Approved = approved, Rejected = rejected };
+	}
+
+	public async Task<IEnumerable<object>> GetAllUsersAsync()
+	{
+		var users = await _userRepository.GetAllAsync();
+		return users.Select(u => new
+		{
+			u.Id,
+			u.Email,
+			u.FullName,
+			u.Role,
+			u.IsActive,
+			u.CreatedAt,
+			u.LastLogin
+		});
+	}
+
+	public async Task<object> ToggleUserStatusAsync(string id, bool isActive)
+	{
+		var user = await _userRepository.GetByIdAsync(id);
+		if (user == null)
+		{
+			return new { Success = false, Message = "User not found" };
+		}
+
+		user.IsActive = isActive;
+		await _userRepository.UpdateAsync(user);
+
+		return new { Success = true, Message = "User status updated successfully", User = new { user.Id, user.Email, user.IsActive } };
 	}
 }

@@ -1,4 +1,5 @@
-﻿using CapFinLoan.Application.Application.DTOs;
+﻿using CapFinLoan.Application.Application.Common;
+using CapFinLoan.Application.Application.DTOs;
 using CapFinLoan.Application.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -66,6 +67,40 @@ namespace CapFinLoan.Application.API.Controllers
 			if (applicantId == null) return Unauthorized();
 
 			var result = await _service.UpdateDraftAsync(id, applicantId, dto);
+			return result.Success ? Ok(result) : BadRequest(result);
+		}
+
+		[HttpGet("{id:int}/status")]
+		public async Task<IActionResult> GetApplicationStatus(int id)
+		{
+			var result = await _service.GetByIdAsync(id);
+			if (!result.Success) return NotFound(result);
+
+			var app = result.Data;
+			var latestDescription = string.IsNullOrWhiteSpace(app.StatusNote)
+				? "Latest status update"
+				: $"Latest status update: {app.StatusNote}";
+			return Ok(ApiResponse<object>.Ok(new
+			{
+				ApplicationId = app.Id,
+				CurrentStatus = app.Status,
+				CurrentRemark = app.StatusNote,
+				Timeline = new object[]
+				{
+					new { Status = "Draft", Date = app.CreatedAt, Description = "Application created" },
+					app.SubmittedAt.HasValue ? new { Status = "Submitted", Date = app.SubmittedAt.Value, Description = "Application submitted" } : null,
+					new { Status = app.Status, Date = app.UpdatedAt, Description = latestDescription }
+				}.Where(x => x != null)
+			}));
+		}
+
+		[HttpPut("{id:int}/status")]
+		[Authorize(Roles = "ADMIN")]
+		public async Task<IActionResult> UpdateStatusByAdmin(int id, [FromBody] UpdateApplicationStatusDto dto)
+		{
+			if (!ModelState.IsValid) return BadRequest(ModelState);
+
+			var result = await _service.UpdateStatusByAdminAsync(id, dto);
 			return result.Success ? Ok(result) : BadRequest(result);
 		}
 

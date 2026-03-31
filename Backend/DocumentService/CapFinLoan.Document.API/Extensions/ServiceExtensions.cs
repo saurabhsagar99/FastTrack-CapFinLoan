@@ -4,6 +4,7 @@ using CapFinLoan.Document.Infrastructure.Services;
 using CapFinLoan.Document.Persistence.Data;
 using CapFinLoan.Document.Persistence.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -14,13 +15,17 @@ namespace CapFinLoan.Document.API.Extensions
 	{
 		public static IServiceCollection AddDocumentServices(
 			this IServiceCollection services,
-			IConfiguration config)
+			IConfiguration config,
+			IWebHostEnvironment environment)
 		{
 			services.AddDbContext<DocumentDbContext>(opt =>
 				opt.UseSqlServer(config.GetConnectionString("DocumentDb")));
 
+			var relativeBasePath = config["FileStorage:BasePath"] ?? "Uploads";
+			var absoluteBasePath = Path.Combine(environment.ContentRootPath, relativeBasePath);
+
 			services.AddScoped<IDocumentRepository, DocumentRepository>();
-			services.AddScoped<IFileStorageService, LocalFileStorageService>();  
+			services.AddScoped<IFileStorageService>(_ => new LocalFileStorageService(absoluteBasePath));
 			services.AddScoped<IDocumentService, DocumentService>();
 
 			services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

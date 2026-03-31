@@ -11,7 +11,7 @@ namespace CapFinLoan.Document.API
 
 			// Add services to the container.
 
-			builder.Services.AddDocumentServices(builder.Configuration);
+			builder.Services.AddDocumentServices(builder.Configuration, builder.Environment);
 			builder.Services.AddControllers();
 			builder.Services.AddEndpointsApiExplorer();
 			builder.Services.AddSwaggerGen();
@@ -39,3 +39,4 @@ namespace CapFinLoan.Document.API
 		}
 	}
 }
+

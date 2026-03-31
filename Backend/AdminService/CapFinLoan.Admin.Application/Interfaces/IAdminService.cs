@@ -11,5 +11,7 @@ namespace CapFinLoan.Admin.Application.Interfaces
 		Task<IEnumerable<object>> GetApplicationQueueAsync();
 		Task<Decision> MakeDecisionAsync(int applicationId, DecisionDto dto, string adminEmail);
 		Task<object> GetReportsSummaryAsync();
+		Task<IEnumerable<object>> GetAllUsersAsync();
+		Task<object> ToggleUserStatusAsync(string id, bool isActive);
 	}
 }
