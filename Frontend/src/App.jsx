@@ -45,7 +45,7 @@ function normalizeRole(role) {
 
 function parseStoredSession() {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw = sessionStorage.getItem(SESSION_KEY);
     if (!raw) return emptySession;
     const parsed = JSON.parse(raw);
     return {
@@ -154,10 +154,72 @@ function mapDecisionStatusToApplicationStatus(status) {
   return "Submitted";
 }
 
+function formatDateTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString();
+}
+
+function parseStatusNoteParts(statusNote) {
+  const text = String(statusNote || "").trim();
+  if (!text) {
+    return { remark: "", sanctionTerms: "" };
+  }
+
+  const sanctionMarker = /sanction terms\s*:\s*/i;
+  const markerIndex = text.search(sanctionMarker);
+
+  if (markerIndex === -1) {
+    return {
+      remark: text.replace(/^remark\s*:\s*/i, "").trim(),
+      sanctionTerms: "",
+    };
+  }
+
+  const sanctionStart = text.match(sanctionMarker);
+  const remarkSegment = text.slice(0, markerIndex).trim();
+  const sanctionSegment = text
+    .slice(markerIndex + (sanctionStart?.[0]?.length || 0))
+    .trim();
+
+  return {
+    remark: remarkSegment
+      .replace(/^remark\s*:\s*/i, "")
+      .replace(/[|,;\-\s]+$/, "")
+      .trim(),
+    sanctionTerms: sanctionSegment,
+  };
+}
+
+function escapeCsvCell(value) {
+  const text = String(value ?? "");
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function downloadCsv(filename, rows) {
+  if (!rows?.length) return;
+  const csv = rows
+    .map((row) => row.map((cell) => escapeCsvCell(cell)).join(","))
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 function HeaderBar({ gateway, setGateway, session, onLogout }) {
+  const navigate = useNavigate();
   const role = normalizeRole(session.role);
   const isAdmin = role === "ADMIN";
   const isApplicant = role === "APPLICANT";
+
+
 
   return (
     <header className="topbar">
@@ -166,14 +228,7 @@ function HeaderBar({ gateway, setGateway, session, onLogout }) {
         <h1>Loan Workflow Portal</h1>
       </div>
 
-      <div className="gateway-input">
-        <label htmlFor="gateway">Gateway URL</label>
-        <input
-          id="gateway"
-          value={gateway}
-          onChange={(event) => setGateway(event.target.value)}
-        />
-      </div>
+      <div className="menu-spacer"></div>
 
       <div className="menu">
         {!session.token ? (
@@ -183,7 +238,6 @@ function HeaderBar({ gateway, setGateway, session, onLogout }) {
           </>
         ) : (
           <>
-            {isApplicant ? <Link to="/dashboard">User Dashboard</Link> : null}
             {isAdmin ? <Link to="/admin">Admin Dashboard</Link> : null}
             <button type="button" className="ghost-btn" onClick={onLogout}>
               Logout
@@ -210,9 +264,19 @@ function AuthLayout({ title, subtitle, children }) {
 
 function LoginPage({ gateway, onLogin }) {
   const navigate = useNavigate();
+  const searchParams = new URLSearchParams(window.location.search);
+  const isLoginAsOther = searchParams.has("as-other");
+  
   const [form, setForm] = useState({ email: "", password: "" });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  // If accessing with ?as-other cleared session to allow new login
+  useEffect(() => {
+    if (isLoginAsOther) {
+      sessionStorage.removeItem(SESSION_KEY);
+    }
+  }, [isLoginAsOther]);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -418,11 +482,22 @@ function UserDashboard({ gateway, session }) {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [activeTab, setActiveTab] = useState("applications");
 
   const token = session.token;
   const selectedApplication = applications.find(
     (app) => String(app.id) === String(selectedId),
   );
+  const selectedStatusParts = parseStatusNoteParts(
+    selectedApplication?.statusNote,
+  );
+  const selectedAdminRemark =
+    selectedStatusParts.remark || selectedApplication?.remarks || "-";
+  const selectedSanctionTerms =
+    selectedApplication?.sanctionTerms ||
+    selectedApplication?.decision?.sanctionTerms ||
+    selectedStatusParts.sanctionTerms ||
+    "";
 
   const fetchApplications = async () => {
     const result = await apiRequest({
@@ -735,29 +810,37 @@ function UserDashboard({ gateway, session }) {
             upload KYC, and track live status updates.
           </p>
         </div>
-        <div className="switch-row">
-          <label className="switch">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(event) => setAutoRefresh(event.target.checked)}
-            />
-            <span>Auto refresh</span>
-          </label>
-          <button
-            type="button"
-            className="secondary-btn"
-            onClick={refreshAll}
-            disabled={loading}
-          >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
-        </div>
       </section>
 
       {notice ? <p className="ok-text strip">{notice}</p> : null}
       {error ? <p className="error-text strip">{error}</p> : null}
 
+      <section className="tab-nav">
+        <button
+          type="button"
+          className={activeTab === "applications" ? "active" : ""}
+          onClick={() => setActiveTab("applications")}
+        >
+          Applications
+        </button>
+        <button
+          type="button"
+          className={activeTab === "documents" ? "active" : ""}
+          onClick={() => setActiveTab("documents")}
+        >
+          Documents
+        </button>
+        <button
+          type="button"
+          className={activeTab === "status" ? "active" : ""}
+          onClick={() => setActiveTab("status")}
+        >
+          Status & Timeline
+        </button>
+      </section>
+
+      {activeTab === "applications" && (
+        <>
       <section className="grid-two">
         <article className="panel">
           <h3>
@@ -937,8 +1020,169 @@ function UserDashboard({ gateway, session }) {
             ) : null}
           </form>
         </article>
+      </section>
 
-        <article className="panel">
+      <section className="panel">
+          <h3>My Loan Applications</h3>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Id</th>
+                <th>Amount</th>
+                <th>Tenure</th>
+                <th>Status</th>
+                <th>Admin Remark</th>
+                <th>Sanction Terms</th>
+                <th>Updated</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {applications.length ? (
+                applications.map((app) => {
+                  const tone = statusTone(app.status);
+                  const noteParts = parseStatusNoteParts(app.statusNote);
+                  return (
+                    <tr
+                      key={app.id}
+                      className={
+                        String(app.id) === String(selectedId)
+                          ? "active-row"
+                          : ""
+                      }
+                    >
+                      <td>
+                        <button
+                          type="button"
+                          className="link-btn"
+                          onClick={() => {
+                            const id = String(app.id);
+                            setSelectedId(id);
+                            setUpload((prev) => ({
+                              ...prev,
+                              applicationId: id,
+                            }));
+                          }}
+                        >
+                          #{app.id}
+                        </button>
+                      </td>
+                      <td>{app.loanAmount}</td>
+                      <td>{app.tenureMonths}</td>
+                      <td>
+                        <span className={`status ${tone}`}>{app.status}</span>
+                      </td>
+                      <td>{noteParts.remark || "-"}</td>
+                      <td>{app.sanctionTerms || noteParts.sanctionTerms || "-"}</td>
+                      <td>{new Date(app.updatedAt).toLocaleString()}</td>
+                      <td>
+                        <div className="action-row">
+                          <button
+                            type="button"
+                            className="secondary-btn"
+                            onClick={() => startEditApplication(app)}
+                            disabled={
+                              loading ||
+                              String(app.status || "").toUpperCase() !== "DRAFT"
+                            }
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="secondary-btn"
+                            onClick={() => submitApplication(app.id)}
+                            disabled={loading}
+                          >
+                            Submit
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="8" className="muted-row">
+                    No applications found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Application Details</h4>
+        {selectedApplication ? (
+          <div className="application-detail-card">
+            <div className="application-detail-top">
+              <div>
+                <p className="eyebrow">Application #{selectedApplication.id}</p>
+                <h3>{selectedApplication.loanPurpose || "Loan Application"}</h3>
+              </div>
+              <span className={`status ${statusTone(selectedApplication.status)}`}>
+                {selectedApplication.status}
+              </span>
+            </div>
+
+            <div className="detail-kpis">
+              <article>
+                <span>Loan Amount</span>
+                <strong>{selectedApplication.loanAmount || "-"}</strong>
+              </article>
+              <article>
+                <span>Tenure</span>
+                <strong>{selectedApplication.tenureMonths || "-"} months</strong>
+              </article>
+              <article>
+                <span>Monthly Income</span>
+                <strong>{selectedApplication.monthlyIncome || "-"}</strong>
+              </article>
+            </div>
+
+            <div className="detail-grid-two">
+              <p><strong>Applicant Name</strong>{selectedApplication.applicantName || "-"}</p>
+              <p><strong>Applicant Email</strong>{selectedApplication.applicantEmail || "-"}</p>
+              <p><strong>Phone</strong>{selectedApplication.phone || "-"}</p>
+              <p><strong>Address</strong>{selectedApplication.address || "-"}</p>
+              <p><strong>Employer</strong>{selectedApplication.employerName || "-"}</p>
+              <p><strong>Employment Type</strong>{selectedApplication.employmentType || "-"}</p>
+            </div>
+
+            <div className="detail-decision-card">
+              <h4>Admin Decision</h4>
+              <p>
+                <strong>Remark:</strong> {selectedAdminRemark}
+              </p>
+              <p>
+                <strong>Sanction Terms:</strong>{" "}
+                {selectedSanctionTerms || "No sanction terms shared yet."}
+              </p>
+            </div>
+
+            <div className="detail-meta-row">
+              <p>
+                <strong>Submitted At:</strong>{" "}
+                {formatDateTime(selectedApplication.submittedAt)}
+              </p>
+              <p>
+                <strong>Last Updated:</strong>{" "}
+                {formatDateTime(selectedApplication.updatedAt)}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="muted">
+            Click an application id to view its full details.
+          </p>
+        )}
+        </section>
+      </>
+      )}
+
+      {activeTab === "documents" && (
+        <section className="panel">
           <h3>Upload KYC Document</h3>
           <form className="card-form" onSubmit={uploadDocument}>
             <label>
@@ -1082,172 +1326,18 @@ function UserDashboard({ gateway, session }) {
               </tbody>
             </table>
           </div>
-        </article>
-      </section>
+        </section>
+      )}
 
-      <section className="panel">
-        <h3>My Loan Applications</h3>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Id</th>
-                <th>Amount</th>
-                <th>Tenure</th>
-                <th>Status</th>
-                <th>Admin Remark</th>
-                <th>Updated</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {applications.length ? (
-                applications.map((app) => {
-                  const tone = statusTone(app.status);
-                  return (
-                    <tr
-                      key={app.id}
-                      className={
-                        String(app.id) === String(selectedId)
-                          ? "active-row"
-                          : ""
-                      }
-                    >
-                      <td>
-                        <button
-                          type="button"
-                          className="link-btn"
-                          onClick={() => {
-                            const id = String(app.id);
-                            setSelectedId(id);
-                            setUpload((prev) => ({
-                              ...prev,
-                              applicationId: id,
-                            }));
-                          }}
-                        >
-                          #{app.id}
-                        </button>
-                      </td>
-                      <td>{app.loanAmount}</td>
-                      <td>{app.tenureMonths}</td>
-                      <td>
-                        <span className={`status ${tone}`}>{app.status}</span>
-                      </td>
-                      <td>{app.statusNote || "-"}</td>
-                      <td>{new Date(app.updatedAt).toLocaleString()}</td>
-                      <td>
-                        <div className="action-row">
-                          <button
-                            type="button"
-                            className="secondary-btn"
-                            onClick={() => startEditApplication(app)}
-                            disabled={
-                              loading ||
-                              String(app.status || "").toUpperCase() !== "DRAFT"
-                            }
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="secondary-btn"
-                            onClick={() => submitApplication(app.id)}
-                            disabled={loading}
-                          >
-                            Submit
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="7" className="muted-row">
-                    No applications found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <h4>Application Details</h4>
-        {selectedApplication ? (
-          <div className="decision-card">
-            <p>
-              <strong>Application Id:</strong> #{selectedApplication.id}
+      {activeTab === "status" && (
+        <section className="panel">
+          <h4>Status Timeline</h4>
+          {statusInfo?.currentRemark ? (
+            <p className="muted">
+              Latest Admin Remark: {statusInfo.currentRemark}
             </p>
-            <p>
-              <strong>Applicant Name:</strong>{" "}
-              {selectedApplication.applicantName}
-            </p>
-            <p>
-              <strong>Applicant Email:</strong>{" "}
-              {selectedApplication.applicantEmail}
-            </p>
-            <p>
-              <strong>Phone:</strong> {selectedApplication.phone}
-            </p>
-            <p>
-              <strong>Address:</strong> {selectedApplication.address}
-            </p>
-            <p>
-              <strong>Employer:</strong> {selectedApplication.employerName}
-            </p>
-            <p>
-              <strong>Employment Type:</strong>{" "}
-              {selectedApplication.employmentType}
-            </p>
-            <p>
-              <strong>Monthly Income:</strong>{" "}
-              {selectedApplication.monthlyIncome}
-            </p>
-            <p>
-              <strong>Loan Amount:</strong> {selectedApplication.loanAmount}
-            </p>
-            <p>
-              <strong>Tenure (Months):</strong>{" "}
-              {selectedApplication.tenureMonths}
-            </p>
-            <p>
-              <strong>Loan Purpose:</strong>{" "}
-              {selectedApplication.loanPurpose || "-"}
-            </p>
-            <p>
-              <strong>Status:</strong> {selectedApplication.status}
-            </p>
-            <p>
-              <strong>Admin Remark:</strong>{" "}
-              {selectedApplication.statusNote || "-"}
-            </p>
-            <p>
-              <strong>Submitted At:</strong>{" "}
-              {selectedApplication.submittedAt
-                ? new Date(selectedApplication.submittedAt).toLocaleString()
-                : "-"}
-            </p>
-            <p>
-              <strong>Updated At:</strong>{" "}
-              {selectedApplication.updatedAt
-                ? new Date(selectedApplication.updatedAt).toLocaleString()
-                : "-"}
-            </p>
-          </div>
-        ) : (
-          <p className="muted">
-            Click an application id to view its full details.
-          </p>
-        )}
-
-        <h4>Status Timeline</h4>
-        {statusInfo?.currentRemark ? (
-          <p className="muted">
-            Latest Admin Remark: {statusInfo.currentRemark}
-          </p>
-        ) : null}
-        <div className="timeline">
+          ) : null}
+          <div className="timeline">
           {Array.isArray(statusInfo?.timeline) && statusInfo.timeline.length ? (
             statusInfo.timeline.map((item, index) => (
               <article
@@ -1264,6 +1354,7 @@ function UserDashboard({ gateway, session }) {
           )}
         </div>
       </section>
+      )}
     </main>
   );
 }
@@ -1271,7 +1362,9 @@ function UserDashboard({ gateway, session }) {
 function AdminDashboard({ gateway, session }) {
   const [applications, setApplications] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [drafts, setDrafts] = useState({});
@@ -1281,17 +1374,99 @@ function AdminDashboard({ gateway, session }) {
   const [applicationDetail, setApplicationDetail] = useState(null);
   const [applicationDocuments, setApplicationDocuments] = useState([]);
   const [verifyingDocId, setVerifyingDocId] = useState("");
+  const [updatingUserId, setUpdatingUserId] = useState("");
+  const [userSearch, setUserSearch] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState("ALL");
+  const [activeTab, setActiveTab] = useState("summary");
 
   const token = session.token;
+
+  const reportRows = useMemo(() => {
+    const headers = [
+      "Application Id",
+      "Applicant",
+      "Email",
+      "Loan Amount",
+      "Tenure Months",
+      "Application Status",
+      "Decision",
+      "Remarks",
+      "Sanction Terms",
+      "Last Updated",
+    ];
+
+    const body = applications.map((app) => {
+      const draft = drafts[app.id] || {};
+      return [
+        app.id,
+        app.applicantName || "",
+        app.applicantEmail || "",
+        app.loanAmount || "",
+        app.tenureMonths || "",
+        app.status || "",
+        draft.status || "",
+        draft.remarks || app.statusNote || "",
+        draft.sanctionTerms || "",
+        formatDateTime(app.updatedAt),
+      ];
+    });
+
+    return [headers, ...body];
+  }, [applications, drafts]);
+
+  const filteredUsers = useMemo(() => {
+    const query = userSearch.trim().toLowerCase();
+    return users.filter((user) => {
+      const role = String(user.role || "").toUpperCase();
+      const roleMatch = userRoleFilter === "ALL" || role === userRoleFilter;
+      if (!roleMatch) return false;
+      if (!query) return true;
+      const haystack = [user.name, user.email, user.phone, user.id]
+        .map((item) => String(item || "").toLowerCase())
+        .join(" ");
+      return haystack.includes(query);
+    });
+  }, [users, userRoleFilter, userSearch]);
+
+  const loadUsers = async ({ silent = false } = {}) => {
+    if (!silent) {
+      setUsersLoading(true);
+    }
+
+    try {
+      const usersResult = await apiRequest({
+        gateway,
+        path: "/gateway/admin/users",
+        token,
+      });
+
+      if (!usersResult.ok) {
+        throw new Error(usersResult.error || "Could not load users.");
+      }
+
+      setUsers(Array.isArray(usersResult.data) ? usersResult.data : []);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Failed to load users.",
+      );
+    } finally {
+      if (!silent) {
+        setUsersLoading(false);
+      }
+    }
+  };
 
   const refresh = async () => {
     setLoading(true);
     setError("");
 
     try {
-      const [appsResult, summaryResult] = await Promise.all([
+      const [appsResult, summaryResult, usersResult] = await Promise.all([
         apiRequest({ gateway, path: "/gateway/admin/applications", token }),
         apiRequest({ gateway, path: "/gateway/admin/reports/summary", token }),
+        apiRequest({ gateway, path: "/gateway/admin/users", token }),
       ]);
 
       if (!appsResult.ok) {
@@ -1301,6 +1476,10 @@ function AdminDashboard({ gateway, session }) {
       setApplications(Array.isArray(appsResult.data) ? appsResult.data : []);
       if (summaryResult.ok) {
         setSummary(summaryResult.data);
+      }
+
+      if (usersResult.ok) {
+        setUsers(Array.isArray(usersResult.data) ? usersResult.data : []);
       }
 
       if (focusedId) {
@@ -1398,7 +1577,12 @@ function AdminDashboard({ gateway, session }) {
         token,
         body: {
           status: mapDecisionStatusToApplicationStatus(draft.status),
-          statusNote: draft.remarks || "",
+          statusNote: [
+            draft.remarks ? `Remark: ${draft.remarks}` : "",
+            draft.sanctionTerms ? `Sanction Terms: ${draft.sanctionTerms}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n"),
         },
       });
 
@@ -1521,6 +1705,59 @@ function AdminDashboard({ gateway, session }) {
     }
   };
 
+  const toggleUserStatus = async (userId, isActive) => {
+    setUpdatingUserId(String(userId));
+    setNotice("");
+    setError("");
+
+    try {
+      const result = await apiRequest({
+        gateway,
+        path: `/gateway/admin/users/${userId}/status`,
+        method: "PUT",
+        token,
+        body: { isActive },
+      });
+
+      if (!result.ok) {
+        setError(result.error || "Could not update user status.");
+        return;
+      }
+
+      setNotice(
+        `User ${userId} marked as ${isActive ? "active" : "inactive"}.`,
+      );
+      await loadUsers({ silent: true });
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error ? requestError.message : "Request failed",
+      );
+    } finally {
+      setUpdatingUserId("");
+    }
+  };
+
+  const exportApplicationsReport = () => {
+    downloadCsv(`applications-report-${Date.now()}.csv`, reportRows);
+    setNotice("Applications report downloaded.");
+  };
+
+  const exportUsersReport = () => {
+    const rows = [
+      ["User Id", "Name", "Email", "Phone", "Role", "Status"],
+      ...filteredUsers.map((user) => [
+        user.id,
+        user.name,
+        user.email,
+        user.phone,
+        user.role,
+        user.isActive ? "Active" : "Inactive",
+      ]),
+    ];
+    downloadCsv(`users-report-${Date.now()}.csv`, rows);
+    setNotice("Users report downloaded.");
+  };
+
   return (
     <main className="dashboard">
       <section className="dashboard-head">
@@ -1528,8 +1765,8 @@ function AdminDashboard({ gateway, session }) {
           <p className="eyebrow">Admin</p>
           <h2>Admin Dashboard</h2>
           <p className="muted">
-            Welcome, {session.name || "Admin"}. Review all applications and
-            approve or reject with remarks.
+            Welcome, {session.name || "Admin"}. Manage applications, decisions,
+            reports, and users.
           </p>
         </div>
         <button
@@ -1542,282 +1779,480 @@ function AdminDashboard({ gateway, session }) {
         </button>
       </section>
 
-      {summary ? (
-        <section className="stats-row">
-          <article className="stat-card">
-            <p>Total Decisions</p>
-            <strong>{summary.total ?? 0}</strong>
-          </article>
-          <article className="stat-card">
-            <p>Approved</p>
-            <strong>{summary.approved ?? 0}</strong>
-          </article>
-          <article className="stat-card">
-            <p>Rejected</p>
-            <strong>{summary.rejected ?? 0}</strong>
-          </article>
-        </section>
-      ) : null}
+      <div className="admin-tabs">
+        <button
+          type="button"
+          className={`tab-btn ${activeTab === "summary" ? "active" : ""}`}
+          onClick={() => setActiveTab("summary")}
+        >
+          Summary
+        </button>
+        <button
+          type="button"
+          className={`tab-btn ${activeTab === "decisions" ? "active" : ""}`}
+          onClick={() => setActiveTab("decisions")}
+        >
+          Decision Management
+        </button>
+        <button
+          type="button"
+          className={`tab-btn ${activeTab === "reports" ? "active" : ""}`}
+          onClick={() => setActiveTab("reports")}
+        >
+          Reports
+        </button>
+        <button
+          type="button"
+          className={`tab-btn ${activeTab === "users" ? "active" : ""}`}
+          onClick={() => setActiveTab("users")}
+        >
+          User Management
+        </button>
+      </div>
 
       {notice ? <p className="ok-text strip">{notice}</p> : null}
       {error ? <p className="error-text strip">{error}</p> : null}
 
-      <section className="panel">
-        <h3>All Applications</h3>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Id</th>
-                <th>Applicant</th>
-                <th>Email</th>
-                <th>Loan</th>
-                <th>Status</th>
-                <th>Decision</th>
-                <th>Remarks</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {applications.length ? (
-                applications.map((app) => (
-                  <tr
-                    key={app.id}
-                    className={String(app.id) === focusedId ? "active-row" : ""}
-                  >
-                    <td>
-                      <button
-                        type="button"
-                        className="link-btn"
-                        onClick={() => fetchDecision(app.id)}
-                      >
-                        #{app.id}
-                      </button>
-                    </td>
-                    <td>{app.applicantName}</td>
-                    <td>{app.applicantEmail}</td>
-                    <td>{app.loanAmount}</td>
-                    <td>
-                      <span className={`status ${statusTone(app.status)}`}>
-                        {app.status}
-                      </span>
-                    </td>
-                    <td>
-                      <select
-                        value={drafts[app.id]?.status || "APPROVED"}
-                        onChange={(event) =>
-                          setDraft(app.id, { status: event.target.value })
-                        }
-                      >
-                        <option value="APPROVED">APPROVED</option>
-                        <option value="REJECTED">REJECTED</option>
-                        <option value="PENDING">PENDING</option>
-                      </select>
-                    </td>
-                    <td>
-                      <input
-                        placeholder="Reason"
-                        value={drafts[app.id]?.remarks || ""}
-                        onChange={(event) =>
-                          setDraft(app.id, { remarks: event.target.value })
-                        }
-                      />
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="primary-btn"
-                        onClick={() => submitDecision(app.id)}
-                        disabled={loading}
-                      >
-                        Save
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="8" className="muted-row">
-                    No applications found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      {activeTab === "summary" && (
+        <section className="tab-content">
+          {summary ? (
+            <section className="stats-row">
+              <article className="stat-card">
+                <p>Total Decisions</p>
+                <strong>{summary.total ?? 0}</strong>
+              </article>
+              <article className="stat-card">
+                <p>Approved</p>
+                <strong>{summary.approved ?? 0}</strong>
+              </article>
+              <article className="stat-card">
+                <p>Rejected</p>
+                <strong>{summary.rejected ?? 0}</strong>
+              </article>
+            </section>
+          ) : null}
+          <section className="panel">
+            <h3>Dashboard Overview</h3>
+            <p className="muted">
+              Use the tabs above to manage application decisions, generate
+              reports, or administer user accounts. All changes are logged and
+              tracked for compliance.
+            </p>
+          </section>
+        </section>
+      )}
 
-      <section className="panel">
-        <h3>Application Detail and KYC</h3>
-        {applicationDetail ? (
-          <div className="detail-grid">
-            <div className="decision-card">
-              <p>
-                <strong>Application Id:</strong> {applicationDetail.id}
-              </p>
-              <p>
-                <strong>Applicant:</strong> {applicationDetail.applicantName}
-              </p>
-              <p>
-                <strong>Email:</strong> {applicationDetail.applicantEmail}
-              </p>
-              <p>
-                <strong>Phone:</strong> {applicationDetail.phone}
-              </p>
-              <p>
-                <strong>Address:</strong> {applicationDetail.address}
-              </p>
-              <p>
-                <strong>Employer:</strong> {applicationDetail.employerName}
-              </p>
-              <p>
-                <strong>Employment:</strong> {applicationDetail.employmentType}
-              </p>
-              <p>
-                <strong>Income:</strong> {applicationDetail.monthlyIncome}
-              </p>
-              <p>
-                <strong>Loan Amount:</strong> {applicationDetail.loanAmount}
-              </p>
-              <p>
-                <strong>Tenure:</strong> {applicationDetail.tenureMonths}
-              </p>
-              <p>
-                <strong>Loan Purpose:</strong>{" "}
-                {applicationDetail.loanPurpose || "-"}
-              </p>
-              <p>
-                <strong>Status:</strong> {applicationDetail.status}
-              </p>
-              <p>
-                <strong>Submitted At:</strong>{" "}
-                {applicationDetail.submittedAt
-                  ? new Date(applicationDetail.submittedAt).toLocaleString()
-                  : "-"}
-              </p>
-            </div>
-
+      {activeTab === "decisions" && (
+        <section className="tab-content">
+          <section className="panel">
+            <h3>All Applications</h3>
             <div className="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th>Doc Id</th>
-                    <th>Type</th>
-                    <th>File</th>
-                    <th>Verified</th>
+                    <th>Id</th>
+                    <th>Applicant</th>
+                    <th>Email</th>
+                    <th>Loan</th>
+                    <th>Status</th>
+                    <th>Decision</th>
                     <th>Remarks</th>
+                    <th>Terms</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {applicationDocuments.length ? (
-                    applicationDocuments.map((doc) => (
-                      <tr key={doc.id}>
-                        <td>{doc.id}</td>
-                        <td>{doc.documentType}</td>
-                        <td>{doc.fileName}</td>
-                        <td>{doc.isVerified ? "Yes" : "No"}</td>
+                  {applications.length ? (
+                    applications.map((app) => (
+                      <tr
+                        key={app.id}
+                        className={
+                          String(app.id) === focusedId ? "active-row" : ""
+                        }
+                      >
+                        <td>
+                          <button
+                            type="button"
+                            className="link-btn"
+                            onClick={() => fetchDecision(app.id)}
+                          >
+                            #{app.id}
+                          </button>
+                        </td>
+                        <td>{app.applicantName}</td>
+                        <td>{app.applicantEmail}</td>
+                        <td>{app.loanAmount}</td>
+                        <td>
+                          <span className={`status ${statusTone(app.status)}`}>
+                            {app.status}
+                          </span>
+                        </td>
+                        <td>
+                          <select
+                            value={drafts[app.id]?.status || "APPROVED"}
+                            onChange={(event) =>
+                              setDraft(app.id, { status: event.target.value })
+                            }
+                          >
+                            <option value="APPROVED">APPROVED</option>
+                            <option value="REJECTED">REJECTED</option>
+                            <option value="PENDING">PENDING</option>
+                          </select>
+                        </td>
                         <td>
                           <input
-                            className="mini-input"
-                            placeholder="Verification remark"
-                            value={
-                              docRemarks[doc.id] ||
-                              doc.verificationRemarks ||
-                              ""
-                            }
+                            placeholder="Reason"
+                            value={drafts[app.id]?.remarks || ""}
                             onChange={(event) =>
-                              setDocRemarks((prev) => ({
-                                ...prev,
-                                [doc.id]: event.target.value,
-                              }))
+                              setDraft(app.id, { remarks: event.target.value })
                             }
                           />
                         </td>
                         <td>
-                          <div className="doc-actions">
-                            <button
-                              type="button"
-                              className="secondary-btn"
-                              disabled={
-                                loading && verifyingDocId === String(doc.id)
-                              }
-                              onClick={() => verifyDocument(doc.id, true)}
-                            >
-                              Verify
-                            </button>
-                            <button
-                              type="button"
-                              className="secondary-btn"
-                              disabled={
-                                loading && verifyingDocId === String(doc.id)
-                              }
-                              onClick={() => verifyDocument(doc.id, false)}
-                            >
-                              Reject
-                            </button>
-                            <button
-                              type="button"
-                              className="secondary-btn"
-                              onClick={() => previewDocument(doc.id)}
-                            >
-                              Preview
-                            </button>
-                          </div>
+                          <input
+                            placeholder="Sanction terms"
+                            value={drafts[app.id]?.sanctionTerms || ""}
+                            onChange={(event) =>
+                              setDraft(app.id, {
+                                sanctionTerms: event.target.value,
+                              })
+                            }
+                          />
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="primary-btn"
+                            onClick={() => submitDecision(app.id)}
+                            disabled={loading}
+                          >
+                            Save
+                          </button>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="muted-row">
-                        No KYC documents found for selected application.
+                      <td colSpan="9" className="muted-row">
+                        No applications found.
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
-          </div>
-        ) : (
-          <p className="muted">
-            Select an application id from above to load full details and KYC
-            documents.
-          </p>
-        )}
-      </section>
+          </section>
 
-      <section className="panel">
-        <h3>Decision Detail</h3>
-        {decisionInfo ? (
-          <div className="decision-card">
-            <p>
-              <strong>Application:</strong> {decisionInfo.applicationId}
+          <section className="panel">
+            <h3>Application Detail and KYC</h3>
+            {applicationDetail ? (
+              <div className="detail-grid">
+                <div className="decision-card">
+                  <p>
+                    <strong>Application Id:</strong> {applicationDetail.id}
+                  </p>
+                  <p>
+                    <strong>Applicant:</strong>{" "}
+                    {applicationDetail.applicantName}
+                  </p>
+                  <p>
+                    <strong>Email:</strong> {applicationDetail.applicantEmail}
+                  </p>
+                  <p>
+                    <strong>Phone:</strong> {applicationDetail.phone}
+                  </p>
+                  <p>
+                    <strong>Address:</strong> {applicationDetail.address}
+                  </p>
+                  <p>
+                    <strong>Employer:</strong> {applicationDetail.employerName}
+                  </p>
+                  <p>
+                    <strong>Employment:</strong>{" "}
+                    {applicationDetail.employmentType}
+                  </p>
+                  <p>
+                    <strong>Income:</strong> {applicationDetail.monthlyIncome}
+                  </p>
+                  <p>
+                    <strong>Loan Amount:</strong> {applicationDetail.loanAmount}
+                  </p>
+                  <p>
+                    <strong>Tenure:</strong> {applicationDetail.tenureMonths}
+                  </p>
+                  <p>
+                    <strong>Loan Purpose:</strong>{" "}
+                    {applicationDetail.loanPurpose || "-"}
+                  </p>
+                  <p>
+                    <strong>Status:</strong> {applicationDetail.status}
+                  </p>
+                  <p>
+                    <strong>Submitted At:</strong>{" "}
+                    {applicationDetail.submittedAt
+                      ? new Date(applicationDetail.submittedAt).toLocaleString()
+                      : "-"}
+                  </p>
+                </div>
+
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Doc Id</th>
+                        <th>Type</th>
+                        <th>File</th>
+                        <th>Verified</th>
+                        <th>Remarks</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {applicationDocuments.length ? (
+                        applicationDocuments.map((doc) => (
+                          <tr key={doc.id}>
+                            <td>{doc.id}</td>
+                            <td>{doc.documentType}</td>
+                            <td>{doc.fileName}</td>
+                            <td>{doc.isVerified ? "Yes" : "No"}</td>
+                            <td>
+                              <input
+                                className="mini-input"
+                                placeholder="Verification remark"
+                                value={
+                                  docRemarks[doc.id] ||
+                                  doc.verificationRemarks ||
+                                  ""
+                                }
+                                onChange={(event) =>
+                                  setDocRemarks((prev) => ({
+                                    ...prev,
+                                    [doc.id]: event.target.value,
+                                  }))
+                                }
+                              />
+                            </td>
+                            <td>
+                              <div className="doc-actions">
+                                <button
+                                  type="button"
+                                  className="secondary-btn"
+                                  disabled={
+                                    loading && verifyingDocId === String(doc.id)
+                                  }
+                                  onClick={() => verifyDocument(doc.id, true)}
+                                >
+                                  Verify
+                                </button>
+                                <button
+                                  type="button"
+                                  className="secondary-btn"
+                                  disabled={
+                                    loading && verifyingDocId === String(doc.id)
+                                  }
+                                  onClick={() => verifyDocument(doc.id, false)}
+                                >
+                                  Reject
+                                </button>
+                                <button
+                                  type="button"
+                                  className="secondary-btn"
+                                  onClick={() => previewDocument(doc.id)}
+                                >
+                                  Preview
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="6" className="muted-row">
+                            No KYC documents found for selected application.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <p className="muted">
+                Select an application id from the table to load full details and
+                KYC documents.
+              </p>
+            )}
+          </section>
+
+          <section className="panel">
+            <h3>Decision Detail</h3>
+            {decisionInfo ? (
+              <div className="decision-card">
+                <p>
+                  <strong>Application:</strong> {decisionInfo.applicationId}
+                </p>
+                <p>
+                  <strong>Status:</strong> {decisionInfo.status}
+                </p>
+                <p>
+                  <strong>Remarks:</strong> {decisionInfo.remarks || "-"}
+                </p>
+                <p>
+                  <strong>Terms:</strong> {decisionInfo.sanctionTerms || "-"}
+                </p>
+                <p>
+                  <strong>By:</strong> {decisionInfo.adminEmail || "-"}
+                </p>
+                <p>
+                  <strong>Date:</strong>{" "}
+                  {decisionInfo.decisionDate
+                    ? new Date(decisionInfo.decisionDate).toLocaleString()
+                    : "-"}
+                </p>
+              </div>
+            ) : (
+              <p className="muted">
+                Select an application id to inspect current decision details.
+              </p>
+            )}
+          </section>
+        </section>
+      )}
+
+      {activeTab === "reports" && (
+        <section className="tab-content">
+          <section className="panel report-panel">
+            <h3>Generate Reports</h3>
+            <p className="muted">
+              Export application decisions and user roster as CSV for audit and
+              operations tracking.
             </p>
-            <p>
-              <strong>Status:</strong> {decisionInfo.status}
-            </p>
-            <p>
-              <strong>Remarks:</strong> {decisionInfo.remarks || "-"}
-            </p>
-            <p>
-              <strong>Terms:</strong> {decisionInfo.sanctionTerms || "-"}
-            </p>
-            <p>
-              <strong>By:</strong> {decisionInfo.adminEmail || "-"}
-            </p>
-            <p>
-              <strong>Date:</strong>{" "}
-              {decisionInfo.decisionDate
-                ? new Date(decisionInfo.decisionDate).toLocaleString()
-                : "-"}
-            </p>
-          </div>
-        ) : (
-          <p className="muted">
-            Select an application id to inspect current decision details.
-          </p>
-        )}
-      </section>
+            <div className="action-row">
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={exportApplicationsReport}
+                disabled={!applications.length}
+              >
+                Export Applications CSV
+              </button>
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={exportUsersReport}
+                disabled={!filteredUsers.length}
+              >
+                Export Users CSV
+              </button>
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => loadUsers()}
+                disabled={usersLoading}
+              >
+                {usersLoading ? "Refreshing Users..." : "Refresh Users"}
+              </button>
+            </div>
+          </section>
+        </section>
+      )}
+
+      {activeTab === "users" && (
+        <section className="tab-content">
+          <section className="panel">
+            <h3>Manage Users</h3>
+            <div className="users-toolbar">
+              <label>
+                <span>Search</span>
+                <input
+                  placeholder="Name, email, phone or id"
+                  value={userSearch}
+                  onChange={(event) => setUserSearch(event.target.value)}
+                />
+              </label>
+              <label>
+                <span>Role</span>
+                <select
+                  value={userRoleFilter}
+                  onChange={(event) => setUserRoleFilter(event.target.value)}
+                >
+                  <option value="ALL">ALL</option>
+                  <option value="ADMIN">ADMIN</option>
+                  <option value="APPLICANT">APPLICANT</option>
+                </select>
+              </label>
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => loadUsers()}
+                disabled={usersLoading}
+              >
+                {usersLoading ? "Loading..." : "Reload"}
+              </button>
+            </div>
+
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Id</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.length ? (
+                    filteredUsers.map((user) => (
+                      <tr key={user.id}>
+                        <td>{user.id}</td>
+                        <td>{user.name || "-"}</td>
+                        <td>{user.email || "-"}</td>
+                        <td>{user.phone || "-"}</td>
+                        <td>{user.role || "-"}</td>
+                        <td>
+                          <span
+                            className={`status ${
+                              user.isActive ? "approved" : "rejected"
+                            }`}
+                          >
+                            {user.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="secondary-btn"
+                            disabled={updatingUserId === String(user.id)}
+                            onClick={() =>
+                              toggleUserStatus(user.id, !Boolean(user.isActive))
+                            }
+                          >
+                            {updatingUserId === String(user.id)
+                              ? "Saving..."
+                              : user.isActive
+                                ? "Deactivate"
+                                : "Activate"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="muted-row">
+                        No users match the current filter.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      )}
     </main>
   );
 }
@@ -1836,7 +2271,13 @@ function Protected({ session, allowedRoles, children }) {
 }
 
 function PublicOnly({ session, children }) {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const isLoginAsOther = searchParams.has("as-other");
+  
   if (!session.token) return children;
+  if (isLoginAsOther) return children; // Allow login as different user
+  
   const role = normalizeRole(session.role);
   return <Navigate to={role === "ADMIN" ? "/admin" : "/dashboard"} replace />;
 }
@@ -1844,23 +2285,69 @@ function PublicOnly({ session, children }) {
 function AppShell() {
   const [gateway, setGateway] = useState(DEFAULT_GATEWAY);
   const [session, setSession] = useState(parseStoredSession());
+  const [tokenValidated, setTokenValidated] = useState(false);
   const location = useLocation();
 
   const role = useMemo(() => normalizeRole(session.role), [session.role]);
 
   const onLogin = (nextSession) => {
     setSession(nextSession);
-    localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
   };
 
   const onLogout = () => {
     setSession(emptySession);
-    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
   };
+
+  // Mark token as validated (no need to call backend on every load)
+  useEffect(() => {
+    setTokenValidated(true);
+  }, []);
+
+  // Listen for logout in other tabs
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key === SESSION_KEY) {
+        if (!event.newValue) {
+          // Session was cleared in another tab
+          setSession(emptySession);
+        } else {
+          // Session was updated in another tab, reload it
+          try {
+            const newSession = JSON.parse(event.newValue);
+            setSession(newSession);
+          } catch {
+            setSession(emptySession);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
 
   const rootPath = role === "ADMIN" ? "/admin" : "/dashboard";
   const authRoute =
     location.pathname === "/login" || location.pathname === "/signup";
+
+  // Show loading while validating token
+  if (!tokenValidated) {
+    return (
+      <div className="app-root">
+        <HeaderBar
+          gateway={gateway}
+          setGateway={setGateway}
+          session={emptySession}
+          onLogout={onLogout}
+        />
+        <div style={{ padding: "2rem", textAlign: "center", color: "#666" }}>
+          Validating session...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app-root">
