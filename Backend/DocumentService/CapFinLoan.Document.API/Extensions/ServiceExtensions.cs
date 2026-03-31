@@ -1,5 +1,6 @@
 ﻿using CapFinLoan.Document.Application.Interfaces;
 using CapFinLoan.Document.Application.Services;
+using CapFinLoan.Document.API.Messaging;
 using CapFinLoan.Document.Infrastructure.Services;        
 using CapFinLoan.Document.Persistence.Data;
 using CapFinLoan.Document.Persistence.Repositories;
@@ -27,6 +28,7 @@ namespace CapFinLoan.Document.API.Extensions
 			services.AddScoped<IDocumentRepository, DocumentRepository>();
 			services.AddScoped<IFileStorageService>(_ => new LocalFileStorageService(absoluteBasePath));
 			services.AddScoped<IDocumentService, DocumentService>();
+			services.AddHostedService<RabbitMqApplicationStatusConsumer>();
 
 			services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 				.AddJwtBearer(opt =>

@@ -49,6 +49,7 @@ namespace CapFinLoan.Application.API.Extensions
 		public static IServiceCollection AddApplicationServices(this IServiceCollection services)
 		{
 			services.AddScoped<IApplicationRepository, ApplicationRepository>();
+			services.AddScoped<IMessagePublisher, RabbitMqPublisher>();
 			services.AddScoped<IApplicationService, ApplicationService>();
 			return services;
 		}

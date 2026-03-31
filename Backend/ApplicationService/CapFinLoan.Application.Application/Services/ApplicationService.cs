@@ -13,10 +13,14 @@ namespace CapFinLoan.Application.Application.Services
 	public class ApplicationService:IApplicationService
 	{
 		private readonly IApplicationRepository _repository;
+		private readonly IMessagePublisher _messagePublisher;
 
-		public ApplicationService(IApplicationRepository repository)
+		public ApplicationService(
+			IApplicationRepository repository,
+			IMessagePublisher messagePublisher)
 		{
 			_repository = repository;
+			_messagePublisher = messagePublisher;
 		}
 
 		public async Task<ApiResponse<ApplicationResponseDto>> CreateDraftAsync(string applicantId, CreateApplicationDto dto)
@@ -97,8 +101,17 @@ namespace CapFinLoan.Application.Application.Services
 
 			application.Status = ApplicationStatus.Submitted;
 			application.SubmittedAt = DateTime.UtcNow;
+			application.UpdatedAt = DateTime.UtcNow;
 
 			var updated = await _repository.UpdateAsync(application);
+			await _messagePublisher.PublishApplicationStatusChangedAsync(new ApplicationStatusChangedEvent
+			{
+				ApplicationId = updated.Id,
+				ApplicantId = updated.ApplicantId,
+				Status = updated.Status.ToString(),
+				StatusNote = updated.StatusNote,
+				UpdatedAtUtc = updated.UpdatedAt
+			});
 			return ApiResponse<ApplicationResponseDto>.Ok(MapToDto(updated), "Application submitted successfully.");
 		}
 
@@ -117,6 +130,14 @@ namespace CapFinLoan.Application.Application.Services
 			application.UpdatedAt = DateTime.UtcNow;
 
 			var updated = await _repository.UpdateAsync(application);
+			await _messagePublisher.PublishApplicationStatusChangedAsync(new ApplicationStatusChangedEvent
+			{
+				ApplicationId = updated.Id,
+				ApplicantId = updated.ApplicantId,
+				Status = updated.Status.ToString(),
+				StatusNote = updated.StatusNote,
+				UpdatedAtUtc = updated.UpdatedAt
+			});
 			return ApiResponse<ApplicationResponseDto>.Ok(MapToDto(updated), "Application status updated successfully.");
 		}
 

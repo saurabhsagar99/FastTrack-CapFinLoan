@@ -22,6 +22,7 @@ namespace CapFinLoan.Auth.API.Extensions
 			services.AddScoped<IUserRepository, UserRepository>();
 			services.AddScoped<IAuthService, AuthService>();
 			services.AddScoped<IJwtService, JwtService>();
+			services.AddScoped<IAuthMessagePublisher, RabbitMqAuthPublisher>();
 
 			services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 			.AddJwtBearer(opt =>

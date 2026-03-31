@@ -21,6 +21,7 @@ public static class ServiceExtensions
 		services.AddScoped<IDecisionRepository, DecisionRepository>();
 		services.AddScoped<IUserRepository, UserRepository>();
 
+		services.AddScoped<IAdminMessagePublisher, RabbitMqAdminPublisher>();
 		services.AddScoped<IAdminService, AdminService>();
 
 		var jwtKey = config["Jwt:Key"]!;

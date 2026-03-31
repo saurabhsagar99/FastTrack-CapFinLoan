@@ -13,11 +13,16 @@ namespace CapFinLoan.Auth.Application.Services
 	{
 		private readonly IUserRepository _userRepository;
 		private readonly IJwtService _jwtService;
+		private readonly IAuthMessagePublisher _messagePublisher;
 
-		public AuthService(IUserRepository userRepository, IJwtService jwtService)
+		public AuthService(
+			IUserRepository userRepository,
+			IJwtService jwtService,
+			IAuthMessagePublisher messagePublisher)
 		{
 			_userRepository = userRepository;
 			_jwtService = jwtService;
+			_messagePublisher = messagePublisher;
 		}
 
 		public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
@@ -56,6 +61,15 @@ namespace CapFinLoan.Auth.Application.Services
 			};
 
 			await _userRepository.AddAsync(user);
+
+			await _messagePublisher.PublishUserRegisteredAsync(new AuthUserRegisteredEvent
+			{
+				UserId = user.Id.ToString(),
+				Name = user.Name,
+				Email = user.Email,
+				Role = user.Role,
+				RegisteredAtUtc = DateTime.UtcNow
+			});
 
 			return new AuthResponseDto
 			{

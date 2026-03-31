@@ -8,11 +8,16 @@ public class AdminService : IAdminService
 {
 	private readonly IDecisionRepository _repository;
 	private readonly IUserRepository _userRepository;
+	private readonly IAdminMessagePublisher _messagePublisher;
 
-	public AdminService(IDecisionRepository repository, IUserRepository userRepository)
+	public AdminService(
+		IDecisionRepository repository,
+		IUserRepository userRepository,
+		IAdminMessagePublisher messagePublisher)
 	{
 		_repository = repository;
 		_userRepository = userRepository;
+		_messagePublisher = messagePublisher;
 	}
 
 	public async Task<IEnumerable<object>> GetApplicationQueueAsync()
@@ -31,6 +36,7 @@ public class AdminService : IAdminService
 	public async Task<Decision> MakeDecisionAsync(int applicationId, DecisionDto dto, string adminEmail)
 	{
 		var existingDecision = await _repository.GetByApplicationIdAsync(applicationId);
+		Decision savedDecision;
 
 		if (existingDecision is not null)
 		{
@@ -40,20 +46,35 @@ public class AdminService : IAdminService
 			existingDecision.AdminEmail = adminEmail;
 			existingDecision.DecisionDate = DateTime.UtcNow;
 
-			return await _repository.UpdateAsync(existingDecision);
+			savedDecision = await _repository.UpdateAsync(existingDecision);
+		}
+		else
+		{
+			var decision = new Decision
+			{
+				ApplicationId = applicationId,
+				Status = dto.Status,
+				Remarks = dto.Remarks,
+				SanctionTerms = dto.SanctionTerms,
+				AdminEmail = adminEmail,
+				DecisionDate = DateTime.UtcNow
+			};
+
+			savedDecision = await _repository.AddAsync(decision);
 		}
 
-		var decision = new Decision
+		await _messagePublisher.PublishDecisionCreatedAsync(new AdminDecisionCreatedEvent
 		{
-			ApplicationId = applicationId,
-			Status = dto.Status,
-			Remarks = dto.Remarks,
-			SanctionTerms = dto.SanctionTerms,
-			AdminEmail = adminEmail,
-			DecisionDate = DateTime.UtcNow
-		};
+			DecisionId = savedDecision.Id,
+			ApplicationId = savedDecision.ApplicationId,
+			Status = savedDecision.Status,
+			Remarks = savedDecision.Remarks,
+			SanctionTerms = savedDecision.SanctionTerms,
+			AdminEmail = savedDecision.AdminEmail,
+			DecisionDateUtc = savedDecision.DecisionDate
+		});
 
-		return await _repository.AddAsync(decision);
+		return savedDecision;
 	}
 
 	public async Task<object> GetReportsSummaryAsync()
