@@ -1,5 +1,7 @@
 using CapFinLoan.Admin.API.Extensions;
 using CapFinLoan.Admin.API.Middleware;
+using CapFinLoan.Admin.Persistence.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace CapFinLoan.Admin.API
 {
@@ -18,6 +20,12 @@ namespace CapFinLoan.Admin.API
 			builder.Services.AddApplicationServices(builder.Configuration);
 
 			var app = builder.Build();
+
+			using (var scope = app.Services.CreateScope())
+			{
+				var db = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
+				db.Database.Migrate();
+			}
 
 			// Configure the HTTP request pipeline.
 

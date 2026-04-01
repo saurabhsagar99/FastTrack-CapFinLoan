@@ -1,0 +1,159 @@
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: capfinloan-mssql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "CapFinLoan@12345"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          '/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P $$MSSQL_SA_PASSWORD -Q "SELECT 1" || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  auth-api:
+    build:
+      context: ./Backend
+      dockerfile: AuthService/CapFinLoan.Auth.API/Dockerfile
+    container_name: capfinloan-auth
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Server=mssql,1433;Database=CapFinLoanDB;User Id=sa;Password=CapFinLoan@12345;TrustServerCertificate=True;Encrypt=False"
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Username: guest
+      RabbitMq__Password: guest
+    ports:
+      - "5251:8080"
+    depends_on:
+      mssql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  application-api:
+    build:
+      context: ./Backend
+      dockerfile: ApplicationService/CapFinLoan.Application.API/Dockerfile
+    container_name: capfinloan-application
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: "Server=mssql,1433;Database=CapFinLoanDB;User Id=sa;Password=CapFinLoan@12345;TrustServerCertificate=True;Encrypt=False"
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Username: guest
+      RabbitMq__Password: guest
+    ports:
+      - "5008:8080"
+    depends_on:
+      mssql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  admin-api:
+    build:
+      context: ./Backend
+      dockerfile: AdminService/CapFinLoan.Admin.API/Dockerfile
+    container_name: capfinloan-admin
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__AdminDb: "Server=mssql,1433;Database=CapFinLoanDB;User Id=sa;Password=CapFinLoan@12345;TrustServerCertificate=True;Encrypt=False"
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Username: guest
+      RabbitMq__Password: guest
+    ports:
+      - "5094:8080"
+    depends_on:
+      mssql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: on-failure
+
+  document-api:
+    build:
+      context: ./Backend
+      dockerfile: DocumentService/CapFinLoan.Document.API/Dockerfile
+    container_name: capfinloan-document
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DocumentDb: "Server=mssql,1433;Database=CapFinLoanDB;User Id=sa;Password=CapFinLoan@12345;TrustServerCertificate=True;Encrypt=False"
+      RabbitMq__Host: rabbitmq
+      RabbitMq__Username: guest
+      RabbitMq__Password: guest
+      FileStorage__BasePath: /app/Uploads
+    ports:
+      - "5296:8080"
+    depends_on:
+      mssql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - document_uploads:/app/Uploads
+    restart: on-failure
+
+  gateway-api:
+    build:
+      context: ./Backend
+      dockerfile: ApiGateway/CapFinLoan.Gateway.API/Dockerfile
+    container_name: capfinloan-gateway
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+    ports:
+      - "5047:8080"
+    depends_on:
+      - auth-api
+      - application-api
+      - admin-api
+      - document-api
+    volumes:
+      - ./Backend/ApiGateway/CapFinLoan.Gateway.API/ocelot.docker.json:/app/ocelot.json:ro
+    restart: on-failure
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    container_name: capfinloan-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - gateway-api
+
+volumes:
+  mssql_data:
+  document_uploads:

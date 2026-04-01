@@ -1,5 +1,7 @@
 using CapFinLoan.Document.API.Extensions;
 using CapFinLoan.Document.API.Middleware;
+using CapFinLoan.Document.Persistence.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace CapFinLoan.Document.API
 {
@@ -17,6 +19,12 @@ namespace CapFinLoan.Document.API
 			builder.Services.AddSwaggerGen();
 
 			var app = builder.Build();
+
+			using (var scope = app.Services.CreateScope())
+			{
+				var db = scope.ServiceProvider.GetRequiredService<DocumentDbContext>();
+				db.Database.Migrate();
+			}
 
 			app.UseMiddleware<ExceptionMiddleware>();
 
