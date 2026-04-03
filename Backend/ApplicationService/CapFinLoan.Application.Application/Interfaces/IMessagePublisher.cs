@@ -7,5 +7,9 @@ namespace CapFinLoan.Application.Application.Interfaces
 		Task PublishApplicationStatusChangedAsync(
 			ApplicationStatusChangedEvent message,
 			CancellationToken cancellationToken = default);
+
+		Task PublishApplicationSubmittedAsync(
+			ApplicationStatusChangedEvent message,
+			CancellationToken cancellationToken = default);
 	}
 }

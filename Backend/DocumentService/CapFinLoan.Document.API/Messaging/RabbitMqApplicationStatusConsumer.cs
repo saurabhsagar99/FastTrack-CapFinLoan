@@ -25,8 +25,10 @@ namespace CapFinLoan.Document.API.Messaging
 			var pass = _configuration["RabbitMq:Password"] ?? "guest";
 			var exchange = _configuration["RabbitMq:Exchange"] ?? "capfinloan.exchange";
 			var queue = _configuration["RabbitMq:Queue"] ?? "capfinloan.document.queue";
-			var routingKey = _configuration["RabbitMq:RoutingKeys:ApplicationStatusChanged"]
+			var statusChangedRoutingKey = _configuration["RabbitMq:RoutingKeys:ApplicationStatusChanged"]
 				?? "application.status.changed";
+			var submittedRoutingKey = _configuration["RabbitMq:RoutingKeys:ApplicationSubmitted"]
+				?? "application.submitted";
 
 			return Task.Run(async () =>
 			{
@@ -61,7 +63,8 @@ namespace CapFinLoan.Document.API.Messaging
 							autoDelete: false,
 							arguments: null);
 
-						channel.QueueBind(queue: queue, exchange: exchange, routingKey: routingKey);
+						channel.QueueBind(queue: queue, exchange: exchange, routingKey: statusChangedRoutingKey);
+						channel.QueueBind(queue: queue, exchange: exchange, routingKey: submittedRoutingKey);
 
 						var consumer = new AsyncEventingBasicConsumer(channel);
 						consumer.Received += async (_, ea) =>

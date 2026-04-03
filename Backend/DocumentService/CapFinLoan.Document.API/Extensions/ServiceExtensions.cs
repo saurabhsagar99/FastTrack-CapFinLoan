@@ -27,6 +27,7 @@ namespace CapFinLoan.Document.API.Extensions
 
 			services.AddScoped<IDocumentRepository, DocumentRepository>();
 			services.AddScoped<IFileStorageService>(_ => new LocalFileStorageService(absoluteBasePath));
+			services.AddScoped<IDocumentMessagePublisher, RabbitMqDocumentPublisher>();
 			services.AddScoped<IDocumentService, DocumentService>();
 			services.AddHostedService<RabbitMqApplicationStatusConsumer>();
 

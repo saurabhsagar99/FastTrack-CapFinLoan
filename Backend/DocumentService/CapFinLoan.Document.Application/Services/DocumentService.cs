@@ -8,14 +8,19 @@ namespace CapFinLoan.Document.Application.Services
 	{
 		private readonly IDocumentRepository _repository;
 		private readonly IFileStorageService _fileStorage;
+		private readonly IDocumentMessagePublisher _messagePublisher;
 
 		private static readonly string[] AllowedExtensions = { ".pdf", ".jpg", ".jpeg", ".png" };
 		private const long MaxFileSizeBytes = 5 * 1024 * 1024; 
 
-		public DocumentService(IDocumentRepository repository, IFileStorageService fileStorage)
+		public DocumentService(
+			IDocumentRepository repository,
+			IFileStorageService fileStorage,
+			IDocumentMessagePublisher messagePublisher)
 		{
 			_repository = repository;
 			_fileStorage = fileStorage;
+			_messagePublisher = messagePublisher;
 		}
 
 		public async Task<DocumentResponseDto> UploadDocumentAsync(UploadDocumentDto dto, string userId)
@@ -71,11 +76,25 @@ namespace CapFinLoan.Document.Application.Services
 			var doc = await _repository.GetByIdAsync(docId)
 				?? throw new KeyNotFoundException($"Document {docId} not found.");
 
+			if (!dto.IsVerified && string.IsNullOrWhiteSpace(dto.Remarks))
+				throw new InvalidOperationException("Remarks are required when rejecting a document.");
+
+			var verificationStatus = dto.IsVerified ? "Verified" : "Rejected";
+
 			doc.IsVerified = dto.IsVerified;
 			doc.VerificationRemarks = dto.Remarks;
 			doc.VerifiedAt = DateTime.UtcNow;
 
 			await _repository.UpdateAsync(doc);
+			await _messagePublisher.PublishDocumentStatusUpdatedAsync(new DocumentStatusUpdatedEvent
+			{
+				DocumentId = doc.Id,
+				ApplicationId = doc.ApplicationId,
+				IsVerified = doc.IsVerified,
+				VerificationStatus = verificationStatus,
+				VerificationRemarks = doc.VerificationRemarks,
+				UpdatedAtUtc = doc.VerifiedAt ?? DateTime.UtcNow
+			});
 			return MapToDto(doc);
 		}
 

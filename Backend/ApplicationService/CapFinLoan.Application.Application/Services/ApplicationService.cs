@@ -104,14 +104,17 @@ namespace CapFinLoan.Application.Application.Services
 			application.UpdatedAt = DateTime.UtcNow;
 
 			var updated = await _repository.UpdateAsync(application);
-			await _messagePublisher.PublishApplicationStatusChangedAsync(new ApplicationStatusChangedEvent
+			var submittedEvent = new ApplicationStatusChangedEvent
 			{
 				ApplicationId = updated.Id,
 				ApplicantId = updated.ApplicantId,
 				Status = updated.Status.ToString(),
 				StatusNote = updated.StatusNote,
 				UpdatedAtUtc = updated.UpdatedAt
-			});
+			};
+
+			await _messagePublisher.PublishApplicationStatusChangedAsync(submittedEvent);
+			await _messagePublisher.PublishApplicationSubmittedAsync(submittedEvent);
 			return ApiResponse<ApplicationResponseDto>.Ok(MapToDto(updated), "Application submitted successfully.");
 		}
 

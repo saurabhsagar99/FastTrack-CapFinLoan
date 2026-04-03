@@ -1,5 +1,6 @@
 ﻿using CapFinLoan.Admin.Application.Interfaces;
 using CapFinLoan.Admin.Application.Services;
+using CapFinLoan.Admin.API.Messaging;
 using CapFinLoan.Admin.Persistence.Data;
 using CapFinLoan.Admin.Persistence.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -23,6 +24,7 @@ public static class ServiceExtensions
 
 		services.AddScoped<IAdminMessagePublisher, RabbitMqAdminPublisher>();
 		services.AddScoped<IAdminService, AdminService>();
+		services.AddHostedService<RabbitMqEventAuditConsumer>();
 
 		var jwtKey = config["Jwt:Key"]!;
 		services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
