@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using CapFinLoan.Application.Application.Common;
 using CapFinLoan.Application.Application.DTOs;
+using CapFinLoan.Application.Domain.Enums;
 
 namespace CapFinLoan.Application.Application.Interfaces
 {
@@ -12,6 +13,7 @@ namespace CapFinLoan.Application.Application.Interfaces
 		Task<ApiResponse<ApplicationResponseDto>> UpdateDraftAsync(int id, string applicantId, UpdateApplicationDto dto);
 		Task<ApiResponse<ApplicationResponseDto>> SubmitApplicationAsync(int id, string applicantId);
 		Task<ApiResponse<ApplicationResponseDto>> UpdateStatusByAdminAsync(int id, UpdateApplicationStatusDto dto);
+		Task ProcessSagaTransitionAsync(int applicationId, ApplicationStatus status, string? statusNote, string sourceEvent);
 		Task<ApiResponse<IEnumerable<ApplicationResponseDto>>> GetMyApplicationsAsync(string applicantId);
 		Task<ApiResponse<ApplicationResponseDto>> GetByIdAsync(int id);
 		Task<ApiResponse<IEnumerable<ApplicationResponseDto>>> GetAllAsync();

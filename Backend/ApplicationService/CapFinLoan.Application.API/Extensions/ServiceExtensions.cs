@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using CapFinLoan.Application.API.Messaging;
 using CapFinLoan.Application.Application.Interfaces;
 using CapFinLoan.Application.Application.Services;
 using CapFinLoan.Application.Persistence.Data;
@@ -49,8 +50,10 @@ namespace CapFinLoan.Application.API.Extensions
 		public static IServiceCollection AddApplicationServices(this IServiceCollection services)
 		{
 			services.AddScoped<IApplicationRepository, ApplicationRepository>();
+			services.AddScoped<ILoanApplicationSagaRepository, LoanApplicationSagaRepository>();
 			services.AddScoped<IMessagePublisher, RabbitMqPublisher>();
 			services.AddScoped<IApplicationService, ApplicationService>();
+			services.AddHostedService<RabbitMqLoanApplicationSagaConsumer>();
 			return services;
 		}
 	}

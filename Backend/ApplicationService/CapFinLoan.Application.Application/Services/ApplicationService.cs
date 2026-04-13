@@ -13,13 +13,16 @@ namespace CapFinLoan.Application.Application.Services
 	public class ApplicationService:IApplicationService
 	{
 		private readonly IApplicationRepository _repository;
+		private readonly ILoanApplicationSagaRepository _sagaRepository;
 		private readonly IMessagePublisher _messagePublisher;
 
 		public ApplicationService(
 			IApplicationRepository repository,
+			ILoanApplicationSagaRepository sagaRepository,
 			IMessagePublisher messagePublisher)
 		{
 			_repository = repository;
+			_sagaRepository = sagaRepository;
 			_messagePublisher = messagePublisher;
 		}
 
@@ -104,6 +107,16 @@ namespace CapFinLoan.Application.Application.Services
 			application.UpdatedAt = DateTime.UtcNow;
 
 			var updated = await _repository.UpdateAsync(application);
+			await _sagaRepository.UpsertAsync(new LoanApplicationSagaState
+			{
+				ApplicationId = updated.Id,
+				CurrentStep = ApplicationStatus.Submitted.ToString(),
+				LastEventName = "application.submitted",
+				LastMessage = "Loan application submitted and awaiting workflow processing.",
+				IsCompleted = false,
+				StartedAtUtc = updated.UpdatedAt,
+				UpdatedAtUtc = updated.UpdatedAt
+			});
 			var submittedEvent = new ApplicationStatusChangedEvent
 			{
 				ApplicationId = updated.Id,
@@ -133,6 +146,7 @@ namespace CapFinLoan.Application.Application.Services
 			application.UpdatedAt = DateTime.UtcNow;
 
 			var updated = await _repository.UpdateAsync(application);
+			await UpsertSagaStateAsync(updated.Id, updated.Status, updated.StatusNote, "admin.status.updated");
 			await _messagePublisher.PublishApplicationStatusChangedAsync(new ApplicationStatusChangedEvent
 			{
 				ApplicationId = updated.Id,
@@ -142,6 +156,43 @@ namespace CapFinLoan.Application.Application.Services
 				UpdatedAtUtc = updated.UpdatedAt
 			});
 			return ApiResponse<ApplicationResponseDto>.Ok(MapToDto(updated), "Application status updated successfully.");
+		}
+
+		public async Task ProcessSagaTransitionAsync(int applicationId, ApplicationStatus status, string? statusNote, string sourceEvent)
+		{
+			var application = await _repository.GetByIdAsync(applicationId);
+
+			if (application == null)
+				return;
+
+			var note = statusNote?.Trim();
+
+			if (!CanTransition(application.Status, status))
+				return;
+
+			if (application.Status == status && string.Equals(application.StatusNote ?? string.Empty, note ?? string.Empty, StringComparison.Ordinal))
+				return;
+
+			application.Status = status;
+			application.StatusNote = note;
+			application.UpdatedAt = DateTime.UtcNow;
+
+			if (status == ApplicationStatus.Submitted && application.SubmittedAt == null)
+			{
+				application.SubmittedAt = application.UpdatedAt;
+			}
+
+			var updated = await _repository.UpdateAsync(application);
+			await UpsertSagaStateAsync(updated.Id, status, note, sourceEvent);
+
+			await _messagePublisher.PublishApplicationStatusChangedAsync(new ApplicationStatusChangedEvent
+			{
+				ApplicationId = updated.Id,
+				ApplicantId = updated.ApplicantId,
+				Status = updated.Status.ToString(),
+				StatusNote = updated.StatusNote,
+				UpdatedAtUtc = updated.UpdatedAt
+			});
 		}
 
 		public async Task<ApiResponse<IEnumerable<ApplicationResponseDto>>> GetMyApplicationsAsync(string applicantId)
@@ -189,5 +240,58 @@ namespace CapFinLoan.Application.Application.Services
 			UpdatedAt = a.UpdatedAt,
 			SubmittedAt = a.SubmittedAt
 		};
+
+		private async Task UpsertSagaStateAsync(int applicationId, ApplicationStatus status, string? statusNote, string sourceEvent)
+		{
+			var currentState = await _sagaRepository.GetByApplicationIdAsync(applicationId);
+			var now = DateTime.UtcNow;
+			var isCompleted = status is ApplicationStatus.Approved or ApplicationStatus.Rejected or ApplicationStatus.Closed;
+
+			var sagaState = currentState ?? new LoanApplicationSagaState
+			{
+				ApplicationId = applicationId,
+				StartedAtUtc = now
+			};
+
+			sagaState.CurrentStep = status.ToString();
+			sagaState.LastEventName = sourceEvent;
+			sagaState.LastMessage = statusNote;
+			sagaState.IsCompleted = isCompleted;
+			sagaState.UpdatedAtUtc = now;
+			sagaState.CompletedAtUtc = isCompleted ? now : currentState?.CompletedAtUtc;
+
+			await _sagaRepository.UpsertAsync(sagaState);
+		}
+
+		private static bool CanTransition(ApplicationStatus currentStatus, ApplicationStatus nextStatus)
+		{
+			if (currentStatus == nextStatus)
+			{
+				return true;
+			}
+
+			if (currentStatus is ApplicationStatus.Approved or ApplicationStatus.Rejected or ApplicationStatus.Closed)
+			{
+				return false;
+			}
+
+			return StatusRank(nextStatus) >= StatusRank(currentStatus);
+		}
+
+		private static int StatusRank(ApplicationStatus status)
+		{
+			return status switch
+			{
+				ApplicationStatus.Draft => 0,
+				ApplicationStatus.Submitted => 1,
+				ApplicationStatus.DocsPending => 2,
+				ApplicationStatus.DocsVerified => 3,
+				ApplicationStatus.UnderReview => 4,
+				ApplicationStatus.Approved => 5,
+				ApplicationStatus.Rejected => 5,
+				ApplicationStatus.Closed => 6,
+				_ => 0
+			};
+		}
 	}
 }

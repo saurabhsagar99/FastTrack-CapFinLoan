@@ -12,6 +12,7 @@ namespace CapFinLoan.Application.Persistence.Data
 			   : base(options) { }
 
 		public DbSet<LoanApplication> LoanApplications { get; set; }
+		public DbSet<LoanApplicationSagaState> LoanApplicationSagaStates { get; set; }
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -52,6 +53,24 @@ namespace CapFinLoan.Application.Persistence.Data
 					  .HasMaxLength(50);
 
 				entity.Property(e => e.StatusNote).HasMaxLength(500);
+			});
+
+			modelBuilder.Entity<LoanApplicationSagaState>(entity =>
+			{
+				entity.HasKey(e => e.Id);
+				entity.HasIndex(e => e.ApplicationId).IsUnique();
+				entity.Property(e => e.ApplicationId).IsRequired();
+
+				entity.Property(e => e.CurrentStep)
+					.IsRequired()
+					.HasMaxLength(50);
+
+				entity.Property(e => e.LastEventName)
+					.IsRequired()
+					.HasMaxLength(100);
+
+				entity.Property(e => e.LastMessage)
+					.HasMaxLength(500);
 			});
 		}
 		}
