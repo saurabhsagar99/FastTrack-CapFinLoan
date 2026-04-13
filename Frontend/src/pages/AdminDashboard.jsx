@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  DEFAULT_DOCUMENT_SERVICE,
   apiRequest,
   downloadCsv,
   formatDateTime,
@@ -288,39 +287,26 @@ function AdminDashboard({ gateway, session }) {
     setError("");
 
     try {
-      const endpoints = [
+      const response = await fetch(
         `${gateway}/gateway/documents/${docId}/download`,
-        `${DEFAULT_DOCUMENT_SERVICE}/api/document/${docId}/download`,
-      ];
-
-      let successfulResponse = null;
-      let lastErrorMessage = "";
-
-      for (const endpoint of endpoints) {
-        const response = await fetch(endpoint, {
+        {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        });
+        },
+      );
 
-        if (response.ok) {
-          successfulResponse = response;
-          break;
-        }
-
+      if (!response.ok) {
         const text = await response.text();
         const parsed = normalizeKeys(parseJsonSafe(text));
-        lastErrorMessage =
-          parsed?.message || `Preview request failed (${response.status}).`;
-      }
-
-      if (!successfulResponse) {
-        setError(lastErrorMessage || "Unable to preview document.");
+        setError(
+          parsed?.message || `Preview request failed (${response.status}).`,
+        );
         return;
       }
 
-      const blob = await successfulResponse.blob();
+      const blob = await response.blob();
       const previewUrl = URL.createObjectURL(blob);
       window.open(previewUrl, "_blank", "noopener,noreferrer");
       setTimeout(() => URL.revokeObjectURL(previewUrl), 60000);

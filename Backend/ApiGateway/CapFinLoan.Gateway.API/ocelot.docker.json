@@ -133,6 +133,23 @@
     },
 
     {
+      "UpstreamPathTemplate": "/gateway/documents/{docId}/download",
+      "UpstreamHttpMethod": ["GET"],
+      "DownstreamPathTemplate": "/api/document/{docId}/download",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "document-api",
+          "Port": 8080
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      }
+    },
+
+    {
       "UpstreamPathTemplate": "/gateway/documents/{applicationId}",
       "UpstreamHttpMethod": ["GET"],
       "DownstreamPathTemplate": "/api/document/application/{applicationId}",
@@ -153,23 +170,6 @@
       "UpstreamPathTemplate": "/gateway/documents/{docId}/verify",
       "UpstreamHttpMethod": ["PUT"],
       "DownstreamPathTemplate": "/api/document/{docId}/verify",
-      "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "document-api",
-          "Port": 8080
-        }
-      ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "Bearer",
-        "AllowedScopes": []
-      }
-    },
-
-    {
-      "UpstreamPathTemplate": "/gateway/documents/{docId}/download",
-      "UpstreamHttpMethod": ["GET"],
-      "DownstreamPathTemplate": "/api/document/{docId}/download",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
