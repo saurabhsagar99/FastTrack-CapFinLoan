@@ -5,8 +5,6 @@ namespace CapFinLoan.Admin.Persistence.Repositories
 {
 	public class UserRepository : IUserRepository
 	{
-		// TODO: Integrate with actual database context
-		// For now, this is a placeholder that can be connected to EF Core DbContext
 		private static List<User> _users = new();
 
 		public async Task<IEnumerable<User>> GetAllAsync()
