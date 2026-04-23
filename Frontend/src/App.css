@@ -637,8 +637,66 @@ th {
 
 .detail-grid {
     display: grid;
-    grid-template-columns: 1fr 1.6fr;
+    grid-template-columns: 1.3fr 1fr;
     gap: 0.8rem;
+}
+
+.detail-section {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.detail-section .decision-card {
+    border: 1px solid #dbe4de;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+    padding: 1.5rem;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.detail-section .decision-card p {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.detail-section .decision-card strong {
+    color: #2d5047;
+    font-weight: 600;
+}
+
+.action-footer {
+    display: flex;
+    gap: 0.65rem;
+    padding: 1rem 0;
+    justify-content: flex-start;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+}
+
+.summary-grid .decision-card {
+    border: 1px solid #dbe4de;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+    padding: 1.5rem;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.summary-grid .decision-card p {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.summary-grid .decision-card strong {
+    color: #2d5047;
+    font-weight: 600;
 }
 
 .application-detail-card {
@@ -961,6 +1019,7 @@ th {
     .card-form,
     .stats-row,
     .detail-grid,
+    .summary-grid,
     .detail-kpis,
     .detail-summary-grid,
     .detail-grid-two,

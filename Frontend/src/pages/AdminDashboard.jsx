@@ -28,7 +28,7 @@ function AdminDashboard({ gateway, session }) {
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("ALL");
   const [activeTab, setActiveTab] = useState("summary");
-  const [documentVerificationComplete, setDocumentVerificationComplete] = useState(false);
+  const [decisionStep, setDecisionStep] = useState("summary");
 
   const token = session.token;
 
@@ -194,7 +194,7 @@ function AdminDashboard({ gateway, session }) {
 
   const fetchDecision = async (applicationId) => {
     setFocusedId(String(applicationId));
-    setDocumentVerificationComplete(false);
+    setDecisionStep("summary");
     const [decisionResult] = await Promise.all([
       apiRequest({
         gateway,
@@ -291,13 +291,32 @@ function AdminDashboard({ gateway, session }) {
     }));
   };
 
+  const isDocumentReviewed = (doc) => {
+    const value = doc?.isVerified;
+    return value !== null && value !== undefined && value !== "";
+  };
+
+  const isDocumentVerified = (doc) => {
+    const value = doc?.isVerified;
+    return (
+      value === true ||
+      value === 1 ||
+      String(value).toLowerCase() === "true"
+    );
+  };
+
+  const getVerificationLabel = (doc) => {
+    if (!isDocumentReviewed(doc)) {
+      return "Pending";
+    }
+    return isDocumentVerified(doc) ? "Yes" : "No";
+  };
+
   const areAllDocumentsReviewed = () => {
     if (!applicationDocuments || applicationDocuments.length === 0) {
       return false;
     }
-    return applicationDocuments.every(
-      (doc) => doc.isVerified === true || doc.isVerified === false
-    );
+    return applicationDocuments.every((doc) => isDocumentReviewed(doc));
   };
 
   const previewDocument = async (docId) => {
@@ -509,7 +528,6 @@ function AdminDashboard({ gateway, session }) {
               <table>
                 <thead>
                   <tr>
-                    <th>Id</th>
                     <th>Applicant</th>
                     <th>Email</th>
                     <th>Loan</th>
@@ -526,15 +544,6 @@ function AdminDashboard({ gateway, session }) {
                           String(app.id) === focusedId ? "active-row" : ""
                         }
                       >
-                        <td>
-                          <button
-                            type="button"
-                            className="link-btn"
-                            onClick={() => fetchDecision(app.id)}
-                          >
-                            #{app.id}
-                          </button>
-                        </td>
                         <td>{app.applicantName}</td>
                         <td>{app.applicantEmail}</td>
                         <td>{app.loanAmount}</td>
@@ -556,7 +565,7 @@ function AdminDashboard({ gateway, session }) {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="muted-row">
+                      <td colSpan="5" className="muted-row">
                         No applications found.
                       </td>
                     </tr>
@@ -567,142 +576,160 @@ function AdminDashboard({ gateway, session }) {
           </section>
 
           <section className="panel">
-            <h3>Application Detail and KYC</h3>
+            <h3>Application Detail</h3>
             {applicationDetail ? (
-              <div className="detail-grid">
-                <div className="decision-card">
-                  <p>
-                    <strong>Application Id:</strong> {applicationDetail.id}
-                  </p>
-                  <p>
-                    <strong>Applicant:</strong>{" "}
-                    {applicationDetail.applicantName}
-                  </p>
-                  <p>
-                    <strong>Email:</strong> {applicationDetail.applicantEmail}
-                  </p>
-                  <p>
-                    <strong>Phone:</strong> {applicationDetail.phone}
-                  </p>
-                  <p>
-                    <strong>Address:</strong> {applicationDetail.address}
-                  </p>
-                  <p>
-                    <strong>Employer:</strong> {applicationDetail.employerName}
-                  </p>
-                  <p>
-                    <strong>Employment:</strong>{" "}
-                    {applicationDetail.employmentType}
-                  </p>
-                  <p>
-                    <strong>Income:</strong> {applicationDetail.monthlyIncome}
-                  </p>
-                  <p>
-                    <strong>Loan Amount:</strong> {applicationDetail.loanAmount}
-                  </p>
-                  <p>
-                    <strong>Tenure:</strong> {applicationDetail.tenureMonths}
-                  </p>
-                  <p>
-                    <strong>Loan Purpose:</strong>{" "}
-                    {applicationDetail.loanPurpose || "-"}
-                  </p>
-                  <p>
-                    <strong>Status:</strong> {applicationDetail.status}
-                  </p>
-                  <p>
-                    <strong>Submitted At:</strong>{" "}
-                    {applicationDetail.submittedAt
-                      ? new Date(applicationDetail.submittedAt).toLocaleString()
-                      : "-"}
-                  </p>
-                </div>
+              <div className="detail-section">
+                {decisionStep === "summary" && (
+                  <>
+                    <div className="summary-grid">
+                      <div className="decision-card">
+                        <p>
+                          <strong>Application Id:</strong> {applicationDetail.id}
+                        </p>
+                        <p>
+                          <strong>Applicant:</strong>{" "}
+                          {applicationDetail.applicantName}
+                        </p>
+                        <p>
+                          <strong>Email:</strong> {applicationDetail.applicantEmail}
+                        </p>
+                        <p>
+                          <strong>Phone:</strong> {applicationDetail.phone}
+                        </p>
+                        <p>
+                          <strong>Address:</strong> {applicationDetail.address}
+                        </p>
+                      </div>
+                      
+                      <div className="decision-card">
+                        <p>
+                          <strong>Employer:</strong> {applicationDetail.employerName}
+                        </p>
+                        <p>
+                          <strong>Employment:</strong>{" "}
+                          {applicationDetail.employmentType}
+                        </p>
+                        <p>
+                          <strong>Income:</strong> {applicationDetail.monthlyIncome}
+                        </p>
+                        <p>
+                          <strong>Loan Amount:</strong> {applicationDetail.loanAmount}
+                        </p>
+                        <p>
+                          <strong>Tenure:</strong> {applicationDetail.tenureMonths}
+                        </p>
+                        <p>
+                          <strong>Loan Purpose:</strong>{" "}
+                          {applicationDetail.loanPurpose || "-"}
+                        </p>
+                        <p>
+                          <strong>Status:</strong> {applicationDetail.status}
+                        </p>
+                        <p>
+                          <strong>Submitted At:</strong>{" "}
+                          {applicationDetail.submittedAt
+                            ? new Date(applicationDetail.submittedAt).toLocaleString()
+                            : "-"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="action-footer">
+                      <button
+                        type="button"
+                        className="primary-btn"
+                        onClick={() => setDecisionStep("verification")}
+                        disabled={!applicationDocuments.length}
+                      >
+                        Start Verification
+                      </button>
+                    </div>
+                  </>
+                )}
 
-                <div className="verification-section">
-                  <h4>Step 1: Document Verification</h4>
-                  <div className="table-wrap">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Doc Id</th>
-                          <th>Type</th>
-                          <th>File</th>
-                          <th>Verified</th>
-                          <th>Remarks</th>
-                          <th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {applicationDocuments.length ? (
-                          applicationDocuments.map((doc) => (
-                            <tr key={doc.id}>
-                              <td>{doc.id}</td>
-                              <td>{doc.documentType}</td>
-                              <td>{doc.fileName}</td>
-                              <td>{doc.isVerified ? "Yes" : "No"}</td>
+                {decisionStep === "verification" && (
+                  <div className="verification-section">
+                    <h4>Step 1: Document Verification</h4>
+                    <div className="table-wrap">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Doc Id</th>
+                            <th>Type</th>
+                            <th>File</th>
+                            <th>Verified</th>
+                            <th>Remarks</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {applicationDocuments.length ? (
+                            applicationDocuments.map((doc) => (
+                              <tr key={doc.id}>
+                                <td>{doc.id}</td>
+                                <td>{doc.documentType}</td>
+                                <td>{doc.fileName}</td>
+                                <td>{getVerificationLabel(doc)}</td>
+                                <td>
+                                <input
+                                  className="mini-input"
+                                  placeholder="Verification remark"
+                                  value={
+                                    docRemarks[doc.id] ||
+                                    doc.verificationRemarks ||
+                                    ""
+                                  }
+                                  onChange={(event) =>
+                                    setDocRemarks((prev) => ({
+                                      ...prev,
+                                      [doc.id]: event.target.value,
+                                    }))
+                                  }
+                                />
+                              </td>
                               <td>
-                              <input
-                                className="mini-input"
-                                placeholder="Verification remark"
-                                value={
-                                  docRemarks[doc.id] ||
-                                  doc.verificationRemarks ||
-                                  ""
-                                }
-                                onChange={(event) =>
-                                  setDocRemarks((prev) => ({
-                                    ...prev,
-                                    [doc.id]: event.target.value,
-                                  }))
-                                }
-                              />
-                            </td>
-                            <td>
-                              <div className="doc-actions">
-                                <button
-                                  type="button"
-                                  className="secondary-btn"
-                                  disabled={
-                                    loading && verifyingDocId === String(doc.id)
-                                  }
-                                  onClick={() => verifyDocument(doc.id, true)}
-                                >
-                                  Verify
-                                </button>
-                                <button
-                                  type="button"
-                                  className="secondary-btn"
-                                  disabled={
-                                    loading && verifyingDocId === String(doc.id)
-                                  }
-                                  onClick={() => verifyDocument(doc.id, false)}
-                                >
-                                  Reject
-                                </button>
-                                <button
-                                  type="button"
-                                  className="secondary-btn"
-                                  onClick={() => previewDocument(doc.id)}
-                                >
-                                  Preview
-                                </button>
-                              </div>
+                                <div className="doc-actions">
+                                  <button
+                                    type="button"
+                                    className="secondary-btn"
+                                    disabled={
+                                      loading && verifyingDocId === String(doc.id)
+                                    }
+                                    onClick={() => verifyDocument(doc.id, true)}
+                                  >
+                                    Verify
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="secondary-btn"
+                                    disabled={
+                                      loading && verifyingDocId === String(doc.id)
+                                    }
+                                    onClick={() => verifyDocument(doc.id, false)}
+                                  >
+                                    Reject
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="secondary-btn"
+                                    onClick={() => previewDocument(doc.id)}
+                                  >
+                                    Preview
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="6" className="muted-row">
+                              No KYC documents found for selected application.
                             </td>
                           </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan="6" className="muted-row">
-                            No KYC documents found for selected application.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                </div>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
 
-                {!documentVerificationComplete && (
                   <div className="verification-complete-section">
                     <p className="section-hint">
                       Review and verify all documents to proceed to final decision.
@@ -710,15 +737,29 @@ function AdminDashboard({ gateway, session }) {
                     <button
                       type="button"
                       className="primary-btn"
-                      onClick={() => setDocumentVerificationComplete(true)}
-                      disabled={!areAllDocumentsReviewed()}
+                      onClick={() => setDecisionStep("final")}
+                      disabled={loading || !areAllDocumentsReviewed()}
                     >
                       Continue
                     </button>
                   </div>
+                  </div>
                 )}
 
-                {documentVerificationComplete && (
+                {decisionStep === "final" && (
+                  <>
+                    <div className="verification-complete-section">
+                      <p className="section-hint">
+                        Document verification complete. Proceed with final decision.
+                      </p>
+                      <button
+                        type="button"
+                        className="secondary-btn"
+                        onClick={() => setDecisionStep("verification")}
+                      >
+                        Back to Verification
+                      </button>
+                    </div>
                   <div className="decision-form-card">
                     <h4>Final Decision</h4>
                     <p className="section-hint">
@@ -783,12 +824,13 @@ function AdminDashboard({ gateway, session }) {
                       <button
                         type="button"
                         className="secondary-btn"
-                        onClick={() => setDocumentVerificationComplete(false)}
+                        onClick={() => setDecisionStep("verification")}
                       >
                         Back to Document Review
                       </button>
                     </div>
                   </div>
+                  </>
                 )}
               </div>
             ) : (
