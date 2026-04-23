@@ -166,6 +166,7 @@ namespace CapFinLoan.Application.Application.Services
 				return;
 
 			var note = statusNote?.Trim();
+			var shouldUpdateStatusNote = !string.Equals(sourceEvent, "document.status.updated", StringComparison.OrdinalIgnoreCase);
 
 			if (!CanTransition(application.Status, status))
 				return;
@@ -174,7 +175,10 @@ namespace CapFinLoan.Application.Application.Services
 				return;
 
 			application.Status = status;
-			application.StatusNote = note;
+			if (shouldUpdateStatusNote)
+			{
+				application.StatusNote = note;
+			}
 			application.UpdatedAt = DateTime.UtcNow;
 
 			if (status == ApplicationStatus.Submitted && application.SubmittedAt == null)

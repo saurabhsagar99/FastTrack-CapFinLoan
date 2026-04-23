@@ -28,6 +28,7 @@ function AdminDashboard({ gateway, session }) {
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("ALL");
   const [activeTab, setActiveTab] = useState("summary");
+  const [documentVerificationComplete, setDocumentVerificationComplete] = useState(false);
 
   const token = session.token;
 
@@ -193,6 +194,7 @@ function AdminDashboard({ gateway, session }) {
 
   const fetchDecision = async (applicationId) => {
     setFocusedId(String(applicationId));
+    setDocumentVerificationComplete(false);
     const [decisionResult] = await Promise.all([
       apiRequest({
         gateway,
@@ -204,6 +206,12 @@ function AdminDashboard({ gateway, session }) {
 
     if (decisionResult.ok) {
       setDecisionInfo(decisionResult.data);
+
+      setDraft(applicationId, {
+        status: decisionResult.data.status?.toUpperCase() || "PENDING",
+        remarks: decisionResult.data.remarks || "",
+        sanctionTerms: decisionResult.data.sanctionTerms || "",
+      });
     } else {
       setDecisionInfo(null);
     }
@@ -281,6 +289,15 @@ function AdminDashboard({ gateway, session }) {
         ...patch,
       },
     }));
+  };
+
+  const areAllDocumentsReviewed = () => {
+    if (!applicationDocuments || applicationDocuments.length === 0) {
+      return false;
+    }
+    return applicationDocuments.every(
+      (doc) => doc.isVerified === true || doc.isVerified === false
+    );
   };
 
   const previewDocument = async (docId) => {
@@ -497,9 +514,6 @@ function AdminDashboard({ gateway, session }) {
                     <th>Email</th>
                     <th>Loan</th>
                     <th>Status</th>
-                    <th>Decision</th>
-                    <th>Remarks</th>
-                    <th>Terms</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -530,52 +544,19 @@ function AdminDashboard({ gateway, session }) {
                           </span>
                         </td>
                         <td>
-                          <select
-                            value={drafts[app.id]?.status || "APPROVED"}
-                            onChange={(event) =>
-                              setDraft(app.id, { status: event.target.value })
-                            }
-                          >
-                            <option value="APPROVED">APPROVED</option>
-                            <option value="REJECTED">REJECTED</option>
-                            <option value="PENDING">PENDING</option>
-                          </select>
-                        </td>
-                        <td>
-                          <input
-                            placeholder="Reason"
-                            value={drafts[app.id]?.remarks || ""}
-                            onChange={(event) =>
-                              setDraft(app.id, { remarks: event.target.value })
-                            }
-                          />
-                        </td>
-                        <td>
-                          <input
-                            placeholder="Sanction terms"
-                            value={drafts[app.id]?.sanctionTerms || ""}
-                            onChange={(event) =>
-                              setDraft(app.id, {
-                                sanctionTerms: event.target.value,
-                              })
-                            }
-                          />
-                        </td>
-                        <td>
                           <button
                             type="button"
-                            className="primary-btn"
-                            onClick={() => submitDecision(app.id)}
-                            disabled={loading}
+                            className="secondary-btn"
+                            onClick={() => fetchDecision(app.id)}
                           >
-                            Save
+                            Review
                           </button>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="9" className="muted-row">
+                      <td colSpan="6" className="muted-row">
                         No applications found.
                       </td>
                     </tr>
@@ -637,27 +618,29 @@ function AdminDashboard({ gateway, session }) {
                   </p>
                 </div>
 
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Doc Id</th>
-                        <th>Type</th>
-                        <th>File</th>
-                        <th>Verified</th>
-                        <th>Remarks</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {applicationDocuments.length ? (
-                        applicationDocuments.map((doc) => (
-                          <tr key={doc.id}>
-                            <td>{doc.id}</td>
-                            <td>{doc.documentType}</td>
-                            <td>{doc.fileName}</td>
-                            <td>{doc.isVerified ? "Yes" : "No"}</td>
-                            <td>
+                <div className="verification-section">
+                  <h4>Step 1: Document Verification</h4>
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Doc Id</th>
+                          <th>Type</th>
+                          <th>File</th>
+                          <th>Verified</th>
+                          <th>Remarks</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {applicationDocuments.length ? (
+                          applicationDocuments.map((doc) => (
+                            <tr key={doc.id}>
+                              <td>{doc.id}</td>
+                              <td>{doc.documentType}</td>
+                              <td>{doc.fileName}</td>
+                              <td>{doc.isVerified ? "Yes" : "No"}</td>
+                              <td>
                               <input
                                 className="mini-input"
                                 placeholder="Verification remark"
@@ -717,6 +700,96 @@ function AdminDashboard({ gateway, session }) {
                     </tbody>
                   </table>
                 </div>
+                </div>
+
+                {!documentVerificationComplete && (
+                  <div className="verification-complete-section">
+                    <p className="section-hint">
+                      Review and verify all documents to proceed to final decision.
+                    </p>
+                    <button
+                      type="button"
+                      className="primary-btn"
+                      onClick={() => setDocumentVerificationComplete(true)}
+                      disabled={!areAllDocumentsReviewed()}
+                    >
+                      Continue
+                    </button>
+                  </div>
+                )}
+
+                {documentVerificationComplete && (
+                  <div className="decision-form-card">
+                    <h4>Final Decision</h4>
+                    <p className="section-hint">
+                      Step 2: Complete the final decision based on your document review.
+                    </p>
+                    <label>
+                      <span>Status</span>
+                      <select
+                        value={
+                          drafts[applicationDetail.id]?.status || "PENDING"
+                        }
+                        onChange={(event) =>
+                          setDraft(applicationDetail.id, {
+                            status: event.target.value,
+                          })
+                        }
+                      >
+                        <option value="APPROVED">APPROVED</option>
+                        <option value="REJECTED">REJECTED</option>
+                        <option value="PENDING">PENDING</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Remarks</span>
+                      <textarea
+                        rows={3}
+                        placeholder="Enter remarks for the decision"
+                        value={
+                          drafts[applicationDetail.id]?.remarks || ""
+                        }
+                        onChange={(event) =>
+                          setDraft(applicationDetail.id, {
+                            remarks: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      <span>Sanction Terms</span>
+                      <textarea
+                        rows={3}
+                        placeholder="Enter sanction terms"
+                        value={
+                          drafts[applicationDetail.id]?.sanctionTerms || ""
+                        }
+                        onChange={(event) =>
+                          setDraft(applicationDetail.id, {
+                            sanctionTerms: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <div className="decision-actions">
+                      <button
+                        type="button"
+                        className="primary-btn"
+                        onClick={() => submitDecision(applicationDetail.id)}
+                        disabled={loading}
+                      >
+                        Save Final Decision
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-btn"
+                        onClick={() => setDocumentVerificationComplete(false)}
+                      >
+                        Back to Document Review
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="muted">

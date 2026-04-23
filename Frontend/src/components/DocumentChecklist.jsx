@@ -7,6 +7,8 @@ function DocumentChecklist({
   onChecklistUpdate,
   loading,
   readOnly = false,
+  showRefresh = true,
+  showVerificationStatus = true,
 }) {
   const [checklist, setChecklist] = useState(null);
   const [checklistLoading, setChecklistLoading] = useState(false);
@@ -126,15 +128,23 @@ function DocumentChecklist({
                     </span>
                     <div>
                       <p className="document-name">{doc.displayName}</p>
-                      {doc.isUploaded && (
+                      {doc.isUploaded ? (
                         <p className="document-meta">
-                          {doc.isVerified ? (
-                            <span className="verified">✓ Verified by Admin</span>
+                          {showVerificationStatus ? (
+                            doc.isVerified ? (
+                              <span className="verified">✓ Accepted by Admin</span>
+                            ) : doc.verificationRemarks ? (
+                              <span className="rejected">✗ Rejected by Admin</span>
+                            ) : (
+                              <span className="pending">● Pending verification</span>
+                            )
                           ) : (
-                            <span className="pending-verification">
-                              ⏳ Pending Verification
-                            </span>
+                            <span className="uploaded">✓ Uploaded</span>
                           )}
+                        </p>
+                      ) : (
+                        <p className="document-meta">
+                          <span className="pending">● Upload pending</span>
                         </p>
                       )}
                       {doc.verificationRemarks && (
@@ -182,18 +192,10 @@ function DocumentChecklist({
           </div>
 
           <div className="checklist-summary">
-            {isAllUploaded ? (
-              <div className="all-uploaded">
-                <p className="ok-text">
-                  {readOnly
-                    ? "✓ All required documents uploaded."
-                    : "✓ All required documents uploaded. You can now submit your application."}
-                </p>
-              </div>
-            ) : (
+            {!isAllUploaded && (
               <div className="pending-uploads">
                 <p className="warning-text">
-                  {checklist.requiredDocuments?.filter(d => !d.isUploaded).length} of {checklist.requiredDocuments?.length} documents still needed.
+                  {checklist.requiredDocuments?.filter((d) => !d.isUploaded).length} of {checklist.requiredDocuments?.length} documents still needed.
                 </p>
               </div>
             )}
@@ -207,7 +209,7 @@ function DocumentChecklist({
         </p>
       ) : null}
 
-      {!checklistLoading && checklist && (
+      {!checklistLoading && checklist && showRefresh && (
         <button
           type="button"
           className="secondary-btn"

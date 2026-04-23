@@ -134,7 +134,7 @@ namespace CapFinLoan.Application.API.Messaging
 					{
 						await applicationService.ProcessSagaTransitionAsync(
 							message.ApplicationId,
-							ApplicationStatus.DocsPending,
+							ApplicationStatus.Submitted,
 							"Documents pending after application submission.",
 							"application.submitted");
 					}
