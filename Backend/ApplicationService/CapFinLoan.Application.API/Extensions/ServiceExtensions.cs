@@ -47,7 +47,7 @@ namespace CapFinLoan.Application.API.Extensions
 			return services;
 		}
 
-		public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+		public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration config)
 		{
 			services.AddScoped<IApplicationRepository, ApplicationRepository>();
 			services.AddScoped<ILoanApplicationSagaRepository, LoanApplicationSagaRepository>();
@@ -58,3 +58,4 @@ namespace CapFinLoan.Application.API.Extensions
 		}
 	}
 }
+

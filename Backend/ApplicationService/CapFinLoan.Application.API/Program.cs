@@ -18,7 +18,7 @@ namespace CapFinLoan.Application.API
 			builder.Services.AddSwaggerGen();
 			builder.Services.AddDatabase(builder.Configuration);
 			builder.Services.AddJwtAuthentication(builder.Configuration);
-			builder.Services.AddApplicationServices();
+			builder.Services.AddApplicationServices(builder.Configuration);
 
 			builder.Services.AddCors(options =>
 			{

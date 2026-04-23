@@ -34,6 +34,13 @@ namespace CapFinLoan.Document.API.Controllers
 			return Ok(ApiResponse<IEnumerable<DocumentResponseDto>>.Ok(docs));
 		}
 
+		[HttpGet("application/{applicationId}/required")]
+		public async Task<IActionResult> GetRequiredDocumentsChecklist(int applicationId)
+		{
+			var checklist = await _documentService.GetRequiredDocumentsChecklistAsync(applicationId);
+			return Ok(ApiResponse<RequiredDocumentsChecklistDto>.Ok(checklist, "Required documents checklist retrieved."));
+		}
+
 		[HttpPut("{docId}/verify")]
 		[Authorize(Roles = "ADMIN")]
 		public async Task<IActionResult> Verify(int docId, [FromBody] VerifyDocumentDto dto)

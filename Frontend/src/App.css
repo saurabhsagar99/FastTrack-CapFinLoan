@@ -238,6 +238,49 @@ h4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.wizard-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.7rem;
+    margin-bottom: 0.8rem;
+}
+
+.wizard-steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.9rem;
+}
+
+.wizard-step {
+    border: 1px solid #d9e2dd;
+    border-radius: 10px;
+    background: #f6faf8;
+    color: #4f6460;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 0.45rem 0.55rem;
+    text-align: center;
+}
+
+.wizard-step.active {
+    background: #e6f5ee;
+    border-color: #7ec4a5;
+    color: #0d5f4c;
+}
+
+.wizard-shell {
+    margin-top: 0.5rem;
+}
+
+.wizard-actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
 .card-form label {
     display: grid;
     gap: 0.35rem;
@@ -682,6 +725,11 @@ th {
     border-top: 1px dashed #d7e0db;
 }
 
+.detail-documents-card {
+    border-top: 1px dashed #d7e0db;
+    padding-top: 0.8rem;
+}
+
 .doc-actions {
     display: flex;
     gap: 0.45rem;
@@ -745,4 +793,192 @@ th {
     .menu {
         flex-wrap: wrap;
     }
+
+    .wizard-steps {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* DocumentChecklist Component Styles */
+.document-checklist-section {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.document-checklist-section h3 {
+    margin-top: 0.6rem;
+}
+
+.document-checklist-section > button {
+    width: fit-content;
+}
+
+.documents-checklist {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.checklist-item {
+    border: 1px solid #dde6e1;
+    border-radius: 12px;
+    background: #fafdf9;
+    padding: 0.8rem;
+}
+
+.checklist-header {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.checklist-status {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.status-indicator.uploaded {
+    background: #d7f8ed;
+    color: #0e6d54;
+}
+
+.status-indicator.pending {
+    background: #e8e8e8;
+    color: #666;
+}
+
+.document-name {
+    margin: 0;
+    font-weight: 700;
+    color: #10261f;
+}
+
+.document-meta {
+    margin: 0.25rem 0 0;
+    font-size: 0.85rem;
+}
+
+.verified {
+    color: #0e6d54;
+    font-weight: 600;
+}
+
+.pending-verification {
+    color: #7b530a;
+    font-weight: 600;
+}
+
+.remark-text {
+    margin: 0.35rem 0 0;
+    font-size: 0.84rem;
+    color: #5d6d66;
+    font-style: italic;
+}
+
+.upload-input-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.upload-input-group input[type="file"] {
+    display: none;
+}
+
+.upload-input-group label {
+    background: #f5f3e8;
+    color: #2f4538;
+    border: 2px solid #d5d1ba;
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.upload-input-group label:hover {
+    background: #efe9d6;
+    border-color: #c4bda9;
+}
+
+.small-btn {
+    background: linear-gradient(135deg, #0f9f6e 0%, #0d7a55 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.small-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(15, 159, 110, 0.3);
+}
+
+.small-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.checklist-summary {
+    border-radius: 10px;
+    padding: 0.8rem;
+}
+
+.all-uploaded {
+    background: #dffaf0;
+    border: 1px solid #ade3cb;
+}
+
+.pending-uploads {
+    background: #fff1d2;
+    border: 1px solid #ffe4b5;
+}
+
+.warning-text {
+    color: #7b530a;
+    margin: 0;
+}
+
+.disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+
+.document-app-selector {
+    display: grid;
+    gap: 0.35rem;
+    max-width: 400px;
+}
+
+.document-app-selector span {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    color: #3e6a5a;
+    font-weight: 800;
+}
+
+.document-app-selector select {
+    width: 100%;
 }

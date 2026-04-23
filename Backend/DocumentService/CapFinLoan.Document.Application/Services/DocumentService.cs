@@ -1,6 +1,7 @@
 ﻿using CapFinLoan.Document.Application.DTOs;
 using CapFinLoan.Document.Application.Interfaces;
 using CapFinLoan.Document.Domain.Models;
+using CapFinLoan.Document.Domain.Enums;
 
 namespace CapFinLoan.Document.Application.Services
 {
@@ -33,17 +34,22 @@ namespace CapFinLoan.Document.Application.Services
 			if (dto.File.Length > MaxFileSizeBytes)
 				throw new InvalidOperationException("File size exceeds 5 MB limit.");
 
+			// Validate and parse DocumentType
+			if (!Enum.TryParse<DocumentType>(dto.DocumentType, ignoreCase: true, out var documentType))
+			{
+				throw new InvalidOperationException($"Invalid document type: {dto.DocumentType}. Allowed types: KYC, AddressProof, IncomeProof, BankStatement");
+			}
+
 			var savedPath = await _fileStorage.SaveFileAsync(
 				dto.File.OpenReadStream(),
 				dto.File.FileName,
 				$"app_{dto.ApplicationId}");
 
-			// Keep only one document per application for this user by replacing any existing uploads.
-			var existingDocs = (await _repository.GetByApplicationIdAsync(dto.ApplicationId))
-				.Where(d => d.UserId == userId)
-				.ToList();
+			// Remove only existing document of the same type for this user (allow multiple documents per app, one per type)
+			var existingDoc = (await _repository.GetByApplicationIdAsync(dto.ApplicationId))
+				.FirstOrDefault(d => d.UserId == userId && d.DocumentType == documentType);
 
-			foreach (var existingDoc in existingDocs)
+			if (existingDoc != null)
 			{
 				_fileStorage.DeleteFile(existingDoc.FilePath);
 				await _repository.DeleteAsync(existingDoc);
@@ -57,7 +63,8 @@ namespace CapFinLoan.Document.Application.Services
 				FilePath = savedPath,
 				FileType = ext,
 				FileSize = dto.File.Length,
-				DocumentType = dto.DocumentType,
+				DocumentType = documentType,
+				IsRequired = true,
 				UploadedAt = DateTime.UtcNow
 			};
 
@@ -69,6 +76,34 @@ namespace CapFinLoan.Document.Application.Services
 		{
 			var docs = await _repository.GetByApplicationIdAsync(applicationId);
 			return docs.Select(MapToDto);
+		}
+
+		public async Task<RequiredDocumentsChecklistDto> GetRequiredDocumentsChecklistAsync(int applicationId)
+		{
+			var requiredDocTypes = new[] { DocumentType.KYC, DocumentType.AddressProof, DocumentType.IncomeProof, DocumentType.BankStatement };
+			var uploadedDocs = (await _repository.GetByApplicationIdAsync(applicationId))
+				.Where(d => d.IsRequired)
+				.ToList();
+
+			var checklist = new RequiredDocumentsChecklistDto
+			{
+				ApplicationId = applicationId,
+				RequiredDocuments = requiredDocTypes.Select(docType => 
+				{
+					var uploadedDoc = uploadedDocs.FirstOrDefault(d => d.DocumentType == docType);
+					return new RequiredDocumentDto
+					{
+						DocumentType = docType.ToString(),
+						DisplayName = GetDocumentDisplayName(docType),
+						IsUploaded = uploadedDoc != null,
+						IsVerified = uploadedDoc?.IsVerified ?? false,
+						VerificationRemarks = uploadedDoc?.VerificationRemarks
+					};
+				}).ToList()
+			};
+
+			checklist.AllRequiredDocumentsUploaded = checklist.RequiredDocuments.All(d => d.IsUploaded);
+			return checklist;
 		}
 
 		public async Task<DocumentResponseDto> VerifyDocumentAsync(int docId, VerifyDocumentDto dto)
@@ -151,10 +186,20 @@ namespace CapFinLoan.Document.Application.Services
 			Id = d.Id,
 			ApplicationId = d.ApplicationId,
 			FileName = d.FileName,
-			DocumentType = d.DocumentType,
+			DocumentType = d.DocumentType.ToString(),
 			IsVerified = d.IsVerified,
+			IsRequired = d.IsRequired,
 			VerificationRemarks = d.VerificationRemarks,
 			UploadedAt = d.UploadedAt
+		};
+
+		private static string GetDocumentDisplayName(DocumentType documentType) => documentType switch
+		{
+			DocumentType.KYC => "KYC Document (Aadhar/PAN Card)",
+			DocumentType.AddressProof => "Address Proof",
+			DocumentType.IncomeProof => "Income Proof (Salary Slip/Tax Return)",
+			DocumentType.BankStatement => "Bank Statement",
+			_ => documentType.ToString()
 		};
 
 		private static string ResolveContentType(string ext)
