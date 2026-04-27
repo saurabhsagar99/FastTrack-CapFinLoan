@@ -253,16 +253,14 @@ function UserDashboard({ gateway, session }) {
       startNewApplication({ clearMessages: false });
       setSelectedId(String(draftApplicationId));
       setActiveTab("all-applications");
-      
-      // Wait for saga, then refresh silently (suppress all errors)
-      setTimeout(async () => {
-        try {
-          await refreshAll({ silent: true, suppressErrors: true });
-        } catch (err) {
-          // Completely ignore any errors from background refresh
-          console.warn("Background refresh failed (ignored):", err);
-        }
-      }, 1500);
+
+      // Refresh immediately after submit and suppress background errors.
+      try {
+        await refreshAll({ silent: true, suppressErrors: true });
+      } catch (err) {
+        // Completely ignore any errors from background refresh
+        console.warn("Background refresh failed (ignored):", err);
+      }
     } catch (requestError) {
       // Only show error if submission itself fails
       setError(
