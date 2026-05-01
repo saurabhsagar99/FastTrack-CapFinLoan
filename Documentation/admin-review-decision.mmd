@@ -1,0 +1,58 @@
+sequenceDiagram
+    actor Admin
+    participant Frontend
+    participant Gateway
+    participant ApplicationService
+    participant DocumentService
+    participant AdminService
+    participant AuthService
+
+    Admin->>Frontend: Open admin dashboard
+    Frontend->>Gateway: GET /gateway/admin/applications
+    Gateway->>ApplicationService: GET /api/applications
+    ApplicationService-->>Gateway: 200 OK (application queue)
+    Gateway-->>Frontend: 200 OK
+
+    Frontend->>Gateway: GET /gateway/admin/reports/summary
+    Gateway->>AdminService: GET /api/admin/reports/summary
+    AdminService-->>Gateway: 200 OK
+    Gateway-->>Frontend: 200 OK
+
+    Frontend->>Gateway: GET /gateway/admin/users
+    Gateway->>AuthService: GET /api/auth/users
+    AuthService-->>Gateway: 200 OK
+    Gateway-->>Frontend: 200 OK
+
+    Admin->>Frontend: Select application to review
+    Frontend->>Gateway: GET /gateway/applications/{id}
+    Gateway->>ApplicationService: GET /api/applications/{id}
+    ApplicationService-->>Gateway: 200 OK
+    Gateway-->>Frontend: 200 OK
+
+    Frontend->>Gateway: GET /gateway/documents/{id}
+    Gateway->>DocumentService: GET /api/document/application/{id}
+    DocumentService-->>Gateway: 200 OK
+    Gateway-->>Frontend: 200 OK
+
+    Frontend->>Gateway: GET /gateway/admin/decisions/application/{id}
+    Gateway->>AdminService: GET /api/admin/decisions/application/{id}
+    AdminService-->>Gateway: 200 OK
+    Gateway-->>Frontend: 200 OK
+
+    Admin->>Frontend: Verify a document
+    Frontend->>Gateway: PUT /gateway/documents/{docId}/verify
+    Gateway->>DocumentService: PUT /api/document/{docId}/verify
+    DocumentService-->>Gateway: 200 OK
+    Gateway-->>Frontend: 200 OK
+
+    Admin->>Frontend: Submit decision
+    Frontend->>Gateway: POST /gateway/admin/applications/{id}/decision
+    Gateway->>AdminService: POST /api/admin/applications/{id}/decision
+    AdminService-->>Gateway: 200 OK
+    Gateway-->>Frontend: 200 OK
+
+    Frontend->>Gateway: PUT /gateway/admin/applications/{id}/status
+    Gateway->>ApplicationService: PUT /api/applications/{id}/status
+    ApplicationService-->>Gateway: 200 OK
+    Gateway-->>Frontend: 200 OK
+    Frontend-->>Admin: Show decision saved and status updated

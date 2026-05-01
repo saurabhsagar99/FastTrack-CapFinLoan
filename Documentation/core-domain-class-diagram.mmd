@@ -1,0 +1,62 @@
+classDiagram
+    class User {
+        Guid Id
+        string Name
+        string Email
+        string Phone
+        string PasswordHash
+        string Role
+        bool IsActive
+        DateTime CreatedAt
+    }
+
+    class LoanApplication {
+        int Id
+        string ApplicantId
+        string ApplicantName
+        string ApplicantEmail
+        string Phone
+        string Address
+        DateTime DateOfBirth
+        string EmployerName
+        string EmploymentType
+        decimal MonthlyIncome
+        decimal LoanAmount
+        int TenureMonths
+        string LoanPurpose
+        ApplicationStatus Status
+        string? StatusNote
+        DateTime CreatedAt
+        DateTime UpdatedAt
+        DateTime? SubmittedAt
+    }
+
+    class DocumentEntity {
+        int Id
+        int ApplicationId
+        string UserId
+        string FileName
+        string FilePath
+        string FileType
+        long FileSize
+        DocumentType DocumentType
+        bool IsRequired
+        bool IsVerified
+        string? VerificationRemarks
+        DateTime UploadedAt
+        DateTime? VerifiedAt
+    }
+
+    class Decision {
+        int Id
+        int ApplicationId
+        string AdminEmail
+        string Status
+        string Remarks
+        string? SanctionTerms
+        DateTime DecisionDate
+    }
+
+    User "1" --> "*" LoanApplication : applicantId
+    LoanApplication "1" --> "*" DocumentEntity : applicationId
+    LoanApplication "1" --> "0..1" Decision : applicationId

@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor Applicant
+    participant Frontend
+    participant Gateway
+    participant AuthService
+
+    Applicant->>Frontend: Open signup page and enter details
+    Frontend->>Gateway: POST /gateway/auth/signup
+    Gateway->>AuthService: POST /api/auth/signup
+    AuthService-->>Gateway: 200 OK (user created)
+    Gateway-->>Frontend: 200 OK (success)
+    Frontend-->>Applicant: Show signup success and navigate to login
+
+    Applicant->>Frontend: Enter email/password on login page
+    Frontend->>Gateway: POST /gateway/auth/login
+    Gateway->>AuthService: POST /api/auth/login
+    AuthService-->>Gateway: 200 OK (token, role, user info)
+    Gateway-->>Frontend: 200 OK (auth response)
+    Frontend-->>Frontend: Store token/session in sessionStorage
+    Frontend-->>Applicant: Redirect to /dashboard or /admin based on role

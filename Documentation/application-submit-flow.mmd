@@ -1,0 +1,30 @@
+sequenceDiagram
+    actor Applicant
+    participant Frontend
+    participant Gateway
+    participant ApplicationService
+    participant DocumentService
+
+    Applicant->>Frontend: Fill loan application form
+    Frontend->>Gateway: POST /gateway/applications
+    Gateway->>ApplicationService: POST /api/applications
+    ApplicationService-->>Gateway: 201 Created (draft app id)
+    Gateway-->>Frontend: 201 Created
+    Frontend-->>Applicant: Show saved draft / application id
+
+    Applicant->>Frontend: Upload required documents
+    Frontend->>Gateway: POST /gateway/documents/upload
+    Gateway->>DocumentService: POST /api/document/upload
+    DocumentService-->>Gateway: 200 OK
+    Gateway-->>Frontend: 200 OK
+    Frontend->>Gateway: GET /gateway/documents/{applicationId}/required
+    Gateway->>DocumentService: GET /api/document/application/{applicationId}/required
+    DocumentService-->>Gateway: 200 OK (checklist status)
+    Gateway-->>Frontend: 200 OK
+
+    Applicant->>Frontend: Click submit application
+    Frontend->>Gateway: POST /gateway/applications/{id}/submit
+    Gateway->>ApplicationService: POST /api/applications/{id}/submit
+    ApplicationService-->>Gateway: 200 OK (submitted)
+    Gateway-->>Frontend: 200 OK
+    Frontend-->>Applicant: Show submission confirmation

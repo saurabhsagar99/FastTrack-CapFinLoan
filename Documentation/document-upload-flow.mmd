@@ -1,0 +1,23 @@
+sequenceDiagram
+    actor Applicant
+    participant Frontend
+    participant Gateway
+    participant DocumentService
+
+    Applicant->>Frontend: Open document checklist in application
+    Frontend->>Gateway: GET /gateway/documents/{applicationId}/required
+    Gateway->>DocumentService: GET /api/document/application/{applicationId}/required
+    DocumentService-->>Gateway: 200 OK (required documents checklist)
+    Gateway-->>Frontend: 200 OK
+    Frontend-->>Applicant: Show required documents list
+
+    Applicant->>Frontend: Select file and upload a document
+    Frontend->>Gateway: POST /gateway/documents/upload
+    Gateway->>DocumentService: POST /api/document/upload
+    DocumentService-->>Gateway: 200 OK (upload success)
+    Gateway-->>Frontend: 200 OK
+    Frontend->>Gateway: GET /gateway/documents/{applicationId}/required
+    Gateway->>DocumentService: GET /api/document/application/{applicationId}/required
+    DocumentService-->>Gateway: 200 OK (updated checklist)
+    Gateway-->>Frontend: 200 OK
+    Frontend-->>Applicant: Update upload status and enable submission when complete

@@ -1,0 +1,21 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant Gateway
+    participant AuthService
+
+    Note over User, Frontend: Scenario A: Unauthenticated user tries /admin
+    User->>Frontend: Navigate to /admin
+    Frontend->>Frontend: Protected sees no session.token
+    Frontend-->>User: Redirect to /login
+
+    Note over User, Frontend: Scenario B: Applicant user tries /admin
+    User->>Frontend: Navigate to /admin
+    Frontend->>Frontend: Protected checks role and denies access
+    Frontend-->>User: Redirect to /dashboard
+
+    Note over User, Frontend: Scenario C: Invalid/expired JWT on protected API call
+    Frontend->>Gateway: GET /gateway/admin/applications with Bearer token
+    Gateway->>Gateway: JWT auth fails
+    Gateway-->>Frontend: 401 Unauthorized
+    Frontend-->>User: Show error or redirect to login
