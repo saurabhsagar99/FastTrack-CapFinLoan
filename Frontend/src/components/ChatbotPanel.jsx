@@ -60,6 +60,9 @@ function ChatbotPanel({ selectedApplication, applications, session, statusInfo, 
   const messagesEndRef = useRef(null);
   const model = DEFAULT_MODEL;
 
+  const initialGreeting =
+    "Hi! How can I help you today? Select one of the options below or ask your own question.";
+
   const quickActions = [
     {
       key: "apply",
@@ -97,6 +100,12 @@ function ChatbotPanel({ selectedApplication, applications, session, statusInfo, 
   const appendMessage = (message) => {
     setMessages((prev) => [...prev, message]);
   };
+
+  useEffect(() => {
+    if (!messages.length) {
+      appendMessage({ role: "assistant", content: initialGreeting });
+    }
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
