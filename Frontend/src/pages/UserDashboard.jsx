@@ -7,6 +7,7 @@ import {
   statusTone,
 } from "../utils/appUtils";
 import DocumentChecklist from "../components/DocumentChecklist";
+import ChatbotPanel from "../components/ChatbotPanel";
 
 function UserDashboard({ gateway, session }) {
   const [loanForm, setLoanForm] = useState(emptyLoanForm);
@@ -22,6 +23,7 @@ function UserDashboard({ gateway, session }) {
   const [activeTab, setActiveTab] = useState("apply");
   const [allDocumentsUploaded, setAllDocumentsUploaded] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const token = session.token;
   const [showDecisionDetails, setShowDecisionDetails] = useState(false);
@@ -759,6 +761,28 @@ function UserDashboard({ gateway, session }) {
           </div>
         </section>
       )}
+
+      {chatOpen && (
+        <div className="chatbot-floating-wrapper">
+          <ChatbotPanel
+            selectedApplication={selectedApplication}
+            applications={applications}
+            session={session}
+            statusInfo={statusInfo}
+            onClose={() => setChatOpen(false)}
+          />
+        </div>
+      )}
+
+      <button
+        type="button"
+        className="chatbot-toggle-btn"
+        onClick={() => setChatOpen((prev) => !prev)}
+        aria-expanded={chatOpen}
+        aria-label={chatOpen ? "Close chatbot" : "Open chatbot"}
+      >
+        💬
+      </button>
     </main>
   );
 }
