@@ -154,29 +154,93 @@ function ChatbotPanel({ selectedApplication, applications, session, statusInfo, 
   const parseMarkdownToJsx = (text) => {
     if (typeof text !== "string" || !text.length) return text;
 
-    return text.split("\n").map((line, lineIndex) => {
-      const segments = line.split(/(\*\*.+?\*\*)/g).filter(Boolean);
-      return (
-        <span key={`line-${lineIndex}`}>
-          {segments.map((segment, segmentIndex) => {
-            const boldMatch = segment.match(/^\*\*(.+?)\*\*$/);
-            if (boldMatch) {
-              return (
-                <strong key={`segment-${lineIndex}-${segmentIndex}`}>
-                  {boldMatch[1]}
-                </strong>
-              );
-            }
-            return (
-              <span key={`segment-${lineIndex}-${segmentIndex}`}>
-                {segment}
-              </span>
-            );
-          })}
-          {lineIndex < text.split("\n").length - 1 ? <br /> : null}
-        </span>
+    const renderInline = (lineText, keyPrefix) => {
+      const segments = [];
+      const regex = /(`[^`]+`|\*\*[^*]+\*\*)/g;
+      let lastIndex = 0;
+      let match;
+
+      while ((match = regex.exec(lineText)) !== null) {
+        if (match.index > lastIndex) {
+          segments.push(lineText.slice(lastIndex, match.index));
+        }
+
+        const token = match[0];
+        if (token.startsWith("`") && token.endsWith("`")) {
+          segments.push(
+            <code key={`${keyPrefix}-code-${lastIndex}`}>
+              {token.slice(1, -1)}
+            </code>,
+          );
+        } else if (token.startsWith("**") && token.endsWith("**")) {
+          segments.push(
+            <strong key={`${keyPrefix}-bold-${lastIndex}`}>
+              {token.slice(2, -2)}
+            </strong>,
+          );
+        } else {
+          segments.push(token);
+        }
+
+        lastIndex = regex.lastIndex;
+      }
+
+      if (lastIndex < lineText.length) {
+        segments.push(lineText.slice(lastIndex));
+      }
+
+      return segments;
+    };
+
+    const lines = text.split("\n");
+    const elements = [];
+    let currentList = null;
+
+    const flushList = () => {
+      if (!currentList) return;
+      elements.push(
+        currentList.ordered ? (
+          <ol key={elements.length}>
+            {currentList.items.map((item, itemIndex) => (
+              <li key={`ol-${itemIndex}`}>{renderInline(item, `ol-${itemIndex}`)}</li>
+            ))}
+          </ol>
+        ) : (
+          <ul key={elements.length}>
+            {currentList.items.map((item, itemIndex) => (
+              <li key={`ul-${itemIndex}`}>{renderInline(item, `ul-${itemIndex}`)}</li>
+            ))}
+          </ul>
+        ),
       );
+      currentList = null;
+    };
+
+    lines.forEach((line, lineIndex) => {
+      const trimmed = line.trim();
+      const unorderedMatch = trimmed.match(/^([*+-])\s+(.*)$/);
+      const orderedMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+
+      if (unorderedMatch || orderedMatch) {
+        const itemText = unorderedMatch ? unorderedMatch[2] : orderedMatch[2];
+        const isOrdered = Boolean(orderedMatch);
+
+        if (!currentList || currentList.ordered !== isOrdered) {
+          flushList();
+          currentList = { ordered: isOrdered, items: [] };
+        }
+
+        currentList.items.push(itemText);
+      } else {
+        flushList();
+        elements.push(
+          <p key={`para-${lineIndex}`}>{renderInline(line, `para-${lineIndex}`)}</p>,
+        );
+      }
     });
+
+    flushList();
+    return elements;
   };
 
   const handleQuickAction = (key) => {
