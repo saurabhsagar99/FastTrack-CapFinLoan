@@ -137,6 +137,34 @@ function ChatbotPanel({ selectedApplication, applications, session, statusInfo, 
   const getReviewTimeResponse = () =>
     "Review typically takes a few business days after submission. It depends on document verification and admin availability, but you should expect an update within 2-4 business days. If you need a faster answer, please check the application status again after submission.";
 
+  const parseMarkdownToJsx = (text) => {
+    if (typeof text !== "string" || !text.length) return text;
+
+    return text.split("\n").map((line, lineIndex) => {
+      const segments = line.split(/(\*\*.+?\*\*)/g).filter(Boolean);
+      return (
+        <span key={`line-${lineIndex}`}>
+          {segments.map((segment, segmentIndex) => {
+            const boldMatch = segment.match(/^\*\*(.+?)\*\*$/);
+            if (boldMatch) {
+              return (
+                <strong key={`segment-${lineIndex}-${segmentIndex}`}>
+                  {boldMatch[1]}
+                </strong>
+              );
+            }
+            return (
+              <span key={`segment-${lineIndex}-${segmentIndex}`}>
+                {segment}
+              </span>
+            );
+          })}
+          {lineIndex < text.split("\n").length - 1 ? <br /> : null}
+        </span>
+      );
+    });
+  };
+
   const handleQuickAction = (key) => {
     const action = quickActions.find((item) => item.key === key);
     if (!action) return;
@@ -260,7 +288,7 @@ function ChatbotPanel({ selectedApplication, applications, session, statusInfo, 
               <span className="role-label">
                 {entry.role === "user" ? "You" : "Assistant"}
               </span>
-              <p>{entry.content}</p>
+              <p>{parseMarkdownToJsx(entry.content)}</p>
             </div>
           ))
         ) : (
