@@ -769,7 +769,7 @@ function AdminDashboard({ gateway, session }) {
                       <span>Status</span>
                       <select
                         value={
-                          drafts[applicationDetail.id]?.status || "PENDING"
+                          drafts[applicationDetail.id]?.status || "APPROVED"
                         }
                         onChange={(event) =>
                           setDraft(applicationDetail.id, {
@@ -779,7 +779,6 @@ function AdminDashboard({ gateway, session }) {
                       >
                         <option value="APPROVED">APPROVED</option>
                         <option value="REJECTED">REJECTED</option>
-                        <option value="PENDING">PENDING</option>
                       </select>
                     </label>
                     <label>
