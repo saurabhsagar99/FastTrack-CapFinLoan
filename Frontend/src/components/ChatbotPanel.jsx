@@ -73,6 +73,10 @@ function ChatbotPanel({ selectedApplication, applications, session, statusInfo, 
       key: "documents",
       label: "What documents do I need to submit?",
     },
+    {
+      key: "reviewTime",
+      label: "How long does review take?",
+    },
   ];
 
   const applicationContext = useMemo(
@@ -108,14 +112,20 @@ function ChatbotPanel({ selectedApplication, applications, session, statusInfo, 
         const status = String(application.status || "Unknown").toLowerCase();
         if (status.includes("approv")) counts.approved += 1;
         else if (status.includes("reject")) counts.rejected += 1;
-        else if (status.includes("underreview") || status.includes("review") || status.includes("pending")) counts.pending += 1;
+        else if (status.includes("docspend")) counts.other += 1;
+        else if (
+          status.includes("submi") ||
+          status.includes("underreview") ||
+          status.includes("review") ||
+          status.includes("pending")
+        ) counts.pending += 1;
         else counts.other += 1;
         return counts;
       },
       { approved: 0, rejected: 0, pending: 0, other: 0 },
     );
 
-    return `You have ${applications.length} applications: ${totals.approved} approved, ${totals.rejected} rejected, ${totals.pending} pending or under review, and ${totals.other} in other states.`;
+    return `You have ${applications.length} applications: ${totals.approved} approved, ${totals.rejected} rejected, ${totals.pending} submitted/pending, and ${totals.other} in other states.`;
   };
 
   const getApplyGuideResponse = () =>
@@ -123,6 +133,9 @@ function ChatbotPanel({ selectedApplication, applications, session, statusInfo, 
 
   const getDocumentGuideResponse = () =>
     "You need to upload all required documents for your loan application. Usually this includes identity proof, address proof, income proof, and any employment or bank documents. After uploading, submit your application so it can be reviewed.";
+
+  const getReviewTimeResponse = () =>
+    "Review typically takes a few business days after submission. It depends on document verification and admin availability, but you should expect an update within 2-4 business days. If you need a faster answer, please check the application status again after submission.";
 
   const handleQuickAction = (key) => {
     const action = quickActions.find((item) => item.key === key);
@@ -134,6 +147,7 @@ function ChatbotPanel({ selectedApplication, applications, session, statusInfo, 
     if (key === "apply") responseText = getApplyGuideResponse();
     else if (key === "summary") responseText = getSummaryResponse();
     else if (key === "documents") responseText = getDocumentGuideResponse();
+    else if (key === "reviewTime") responseText = getReviewTimeResponse();
 
     appendMessage({ role: "assistant", content: responseText });
     setError("");
@@ -153,7 +167,7 @@ function ChatbotPanel({ selectedApplication, applications, session, statusInfo, 
       {
         role: "system",
         content:
-          "You are a helpful loan assistant for CapFinLoan customers. Answer clearly and politely. If the user asks about a selected application, use the application details that are provided.",
+          "You are a helpful loan assistant for CapFinLoan customers. Keep responses concise, clear, and well-structured. Use bullet points for lists. If the user asks about a specific application, extract and present the key details directly from the provided application context without unnecessary explanations. Avoid verbose or rambling responses. Be direct and professional.",
       },
     ];
 
