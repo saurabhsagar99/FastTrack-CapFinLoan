@@ -572,6 +572,7 @@ function UserDashboard({ gateway, session }) {
             <table>
               <thead>
                 <tr>
+                  <th>Serial</th>
                   <th>Applicant Name</th>
                   <th>Status</th>
                   <th>Action</th>
@@ -579,7 +580,7 @@ function UserDashboard({ gateway, session }) {
               </thead>
               <tbody>
                 {applications.length ? (
-                  applications.map((app) => {
+                  applications.map((app, index) => {
                     const tone = statusTone(app.status);
 
                     return (
@@ -591,6 +592,7 @@ function UserDashboard({ gateway, session }) {
                             : ""
                         }
                       >
+                        <td>{index + 1}</td>
                         <td>
                           <span className="applicant-name">{app.applicantName || "Anonymous"}</span>
                         </td>

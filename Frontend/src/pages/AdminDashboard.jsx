@@ -528,6 +528,7 @@ function AdminDashboard({ gateway, session }) {
               <table>
                 <thead>
                   <tr>
+                    <th>Serial</th>
                     <th>Applicant</th>
                     <th>Email</th>
                     <th>Loan</th>
@@ -537,13 +538,14 @@ function AdminDashboard({ gateway, session }) {
                 </thead>
                 <tbody>
                   {applications.length ? (
-                    applications.map((app) => (
+                    applications.map((app, index) => (
                       <tr
                         key={app.id}
                         className={
                           String(app.id) === focusedId ? "active-row" : ""
                         }
                       >
+                        <td>{index + 1}</td>
                         <td>{app.applicantName}</td>
                         <td>{app.applicantEmail}</td>
                         <td>{app.loanAmount}</td>

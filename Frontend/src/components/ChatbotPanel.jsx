@@ -15,10 +15,11 @@ function buildDashboardContext({ session, applications, selectedApplication, sta
 
   if (applications?.length) {
     lines.push(`- Total loan applications: ${applications.length}`);
-    applications.forEach((app) => {
+    lines.push("- Applications are listed newest first, with serial numbers based on the current displayed order.");
+    applications.forEach((app, index) => {
       const selectedMark = selectedApplication?.id === app.id ? " [selected]" : "";
       lines.push(
-        `  • Application ${app.id}${selectedMark}: status=${app.status || "Unknown"}, amount=${app.loanAmount || "Unknown"}, tenure=${app.tenureMonths || "Unknown"}, purpose=${app.loanPurpose || "Unknown"}`,
+        `  • Serial ${index + 1}: Application ${app.id}${selectedMark}, status=${app.status || "Unknown"}, amount=${app.loanAmount || "Unknown"}, tenure=${app.tenureMonths || "Unknown"}, purpose=${app.loanPurpose || "Unknown"}`,
       );
     });
   }
