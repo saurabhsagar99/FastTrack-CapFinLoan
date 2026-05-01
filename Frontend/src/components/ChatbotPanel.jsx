@@ -261,7 +261,6 @@ function ChatbotPanel({ selectedApplication, applications, session, statusInfo, 
           <p className="muted">
             Ask questions about your loan application or the next steps. Use this chat if you need guidance.
           </p>
-          <p className="chatbot-model-note">Using model: {model}</p>
         </div>
         <div className="chatbot-actions">
           {onClose ? (

@@ -693,14 +693,22 @@ th {
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 0.75rem;
+    padding-top: 0.25rem;
+    border-top: 1px solid #e6eee5;
 }
 
 .chatbot-input {
     min-width: 0;
-    padding: 0.94rem 1rem;
+    padding: 0.85rem 0.95rem;
     border-radius: 14px;
-    border: 1px solid #d7ded5;
+    border: 1px solid #dfe8df;
     background: #ffffff;
+    box-shadow: inset 0 1px 5px rgba(9, 29, 18, 0.04);
+}
+
+.chatbot-input:focus {
+    border-color: #5d9f7d;
+    box-shadow: 0 0 0 4px rgba(93, 159, 125, 0.12);
 }
 
 .chatbot-input:focus {
@@ -743,14 +751,15 @@ th {
     display: flex;
     flex-direction: column;
     gap: 0.85rem;
-    box-shadow: 0 28px 60px rgba(10, 40, 20, 0.18);
+    box-shadow: 0 18px 45px rgba(20, 60, 40, 0.12);
     border-radius: 24px;
     padding: 0.95rem;
-    background: #ffffff;
+    background: #f7fcf7;
     max-height: 86vh;
     width: 100%;
     min-height: 360px;
     overflow: hidden;
+    border: 1px solid rgba(93, 168, 121, 0.16);
 }
 
 .chatbot-body {
@@ -767,6 +776,21 @@ th {
     gap: 1rem;
     align-items: flex-start;
     flex-wrap: wrap;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid #e6eee5;
+}
+
+.chatbot-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    letter-spacing: -0.03em;
+    color: #1f3930;
+}
+
+.chatbot-header .muted {
+    margin: 0.4rem 0 0;
+    color: #546d64;
+    line-height: 1.5;
 }
 
 .chatbot-actions {
@@ -776,23 +800,22 @@ th {
 
 .chatbot-close-btn {
     border: none;
-    background: #f2f5f2;
+    background: #edf7ee;
     color: #1f3b32;
     border-radius: 50%;
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     font-size: 1.15rem;
     cursor: pointer;
+    box-shadow: 0 6px 18px rgba(22, 50, 42, 0.08);
 }
 
 .chatbot-close-btn:hover {
-    background: #e2eee2;
+    background: #ddefdb;
 }
 
 .chatbot-model-note {
-    margin: 0.35rem 0 0;
-    color: #50655e;
-    font-size: 0.84rem;
+    display: none;
 }
 
 @media (max-width: 700px) {
@@ -840,9 +863,19 @@ th {
 }
 
 .chatbot-quick-actions--inline {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
-    margin-top: 0.85rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.75rem;
+}
+
+.chatbot-quick-actions--inline .chatbot-action-btn {
+    flex: 1 1 auto;
+    min-width: 120px;
+    max-width: 170px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.88rem;
+    text-align: center;
 }
 
 .chatbot-quick-actions {
