@@ -24,6 +24,9 @@ function UserDashboard({ gateway, session }) {
   const [allDocumentsUploaded, setAllDocumentsUploaded] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
   const [chatOpen, setChatOpen] = useState(false);
+  const [dobYear, setDobYear] = useState("");
+  const [dobMonth, setDobMonth] = useState("");
+  const [dobDay, setDobDay] = useState("");
 
   const token = session.token;
   const [showDecisionDetails, setShowDecisionDetails] = useState(false);
@@ -133,6 +136,48 @@ function UserDashboard({ gateway, session }) {
     tenureMonths: Number(loanForm.tenureMonths || 0),
   });
 
+  const getDaysInMonth = (year, month) => new Date(year, month, 0).getDate();
+
+  const buildDobString = (year, month, day) => {
+    if (!year || !month || !day) return "";
+    return `${year}-${month}-${day}`;
+  };
+
+  const handleDobPartChange = (part, value) => {
+    const nextYear = part === "year" ? value : dobYear;
+    const nextMonth = part === "month" ? value : dobMonth;
+    const nextDay = part === "day" ? value : dobDay;
+    let sanitizedDay = nextDay;
+
+    if (nextYear && nextMonth && sanitizedDay) {
+      const maxDay = getDaysInMonth(Number(nextYear), Number(nextMonth));
+      if (Number(sanitizedDay) > maxDay) {
+        sanitizedDay = String(maxDay).padStart(2, "0");
+      }
+    }
+
+    if (part === "year") setDobYear(value);
+    if (part === "month") setDobMonth(value);
+    if (part === "day") setDobDay(value);
+
+    const nextDate = buildDobString(nextYear, nextMonth, sanitizedDay);
+    setLoanForm((prev) => ({
+      ...prev,
+      dateOfBirth: nextDate,
+    }));
+  };
+
+  useEffect(() => {
+    if (!loanForm.dateOfBirth) {
+      return;
+    }
+
+    const [year, month, day] = loanForm.dateOfBirth.split("-");
+    setDobYear(year || "");
+    setDobMonth(month || "");
+    setDobDay(day || "");
+  }, [loanForm.dateOfBirth]);
+
   const saveDraftApplication = async () => {
     const targetId = editingApplicationId || draftApplicationId;
     const isEditing = Boolean(targetId);
@@ -187,6 +232,9 @@ function UserDashboard({ gateway, session }) {
 
   const startNewApplication = ({ clearMessages = true } = {}) => {
     setLoanForm(emptyLoanForm);
+    setDobYear("");
+    setDobMonth("");
+    setDobDay("");
     setEditingApplicationId("");
     setDraftApplicationId("");
     setAllDocumentsUploaded(false);
@@ -402,17 +450,70 @@ function UserDashboard({ gateway, session }) {
                   </label>
                   <label>
                     <span>Date Of Birth</span>
-                    <input
-                      required
-                      type="date"
-                      value={loanForm.dateOfBirth}
-                      onChange={(event) =>
-                        setLoanForm((prev) => ({
-                          ...prev,
-                          dateOfBirth: event.target.value,
-                        }))
-                      }
-                    />
+                    <div className="dob-selects" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
+                      <select
+                        required
+                        value={dobYear}
+                        onChange={(event) => handleDobPartChange("year", event.target.value)}
+                      >
+                        <option value="">Year</option>
+                        {Array.from({
+                          length: new Date().getFullYear() - 1899,
+                        })
+                          .map((_, index) => {
+                            const year = String(new Date().getFullYear() - index);
+                            return (
+                              <option key={year} value={year}>
+                                {year}
+                              </option>
+                            );
+                          })}
+                      </select>
+                      <select
+                        required
+                        value={dobMonth}
+                        onChange={(event) => handleDobPartChange("month", event.target.value)}
+                      >
+                        <option value="">Month</option>
+                        {[
+                          ["01", "Jan"],
+                          ["02", "Feb"],
+                          ["03", "Mar"],
+                          ["04", "Apr"],
+                          ["05", "May"],
+                          ["06", "Jun"],
+                          ["07", "Jul"],
+                          ["08", "Aug"],
+                          ["09", "Sep"],
+                          ["10", "Oct"],
+                          ["11", "Nov"],
+                          ["12", "Dec"],
+                        ].map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        required
+                        value={dobDay}
+                        onChange={(event) => handleDobPartChange("day", event.target.value)}
+                      >
+                        <option value="">Day</option>
+                        {Array.from({
+                          length: dobYear && dobMonth
+                            ? getDaysInMonth(Number(dobYear), Number(dobMonth))
+                            : 31,
+                        }).map((_, index) => {
+                          const day = String(index + 1).padStart(2, "0");
+                          return (
+                            <option key={day} value={day}>
+                              {day}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
                   </label>
                 </>
               ) : (

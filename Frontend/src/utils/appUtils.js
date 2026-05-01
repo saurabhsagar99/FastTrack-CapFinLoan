@@ -16,7 +16,7 @@ const emptyLoanForm = {
   applicantEmail: "",
   phone: "",
   address: "",
-  dateOfBirth: "1990-01-01",
+  dateOfBirth: "",
   employerName: "",
   employmentType: "SALARIED",
   monthlyIncome: "",
