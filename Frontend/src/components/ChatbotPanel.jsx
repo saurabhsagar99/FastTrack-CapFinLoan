@@ -103,7 +103,11 @@ function ChatbotPanel({ selectedApplication, applications, session, statusInfo, 
 
   useEffect(() => {
     if (!messages.length) {
-      appendMessage({ role: "assistant", content: initialGreeting });
+      appendMessage({
+        role: "assistant",
+        content: initialGreeting,
+        showQuickActions: true,
+      });
     }
   }, []);
 
@@ -274,19 +278,6 @@ function ChatbotPanel({ selectedApplication, applications, session, statusInfo, 
       </div>
 
       <div className="chatbot-body">
-        <div className="chatbot-quick-actions">
-          {quickActions.map((action) => (
-            <button
-              key={action.key}
-              type="button"
-              className="chatbot-action-btn"
-              onClick={() => handleQuickAction(action.key)}
-            >
-              {action.label}
-            </button>
-          ))}
-        </div>
-
         <div className="chatbot-messages" aria-live="polite">
         {messages.length ? (
           messages.map((entry, index) => (
@@ -298,6 +289,20 @@ function ChatbotPanel({ selectedApplication, applications, session, statusInfo, 
                 {entry.role === "user" ? "You" : "Assistant"}
               </span>
               <p>{parseMarkdownToJsx(entry.content)}</p>
+              {entry.showQuickActions ? (
+                <div className="chatbot-quick-actions chatbot-quick-actions--inline">
+                  {quickActions.map((action) => (
+                    <button
+                      key={action.key}
+                      type="button"
+                      className="chatbot-action-btn"
+                      onClick={() => handleQuickAction(action.key)}
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ))
         ) : (
