@@ -17,6 +17,7 @@ function DocumentChecklist({
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadingDocType, setUploadingDocType] = useState(null);
 
+  // Loads the checklist for the current application and updates the parent state.
   const fetchChecklist = async () => {
     if (!applicationId) return;
     
@@ -54,13 +55,14 @@ function DocumentChecklist({
     }
   };
 
-  // Auto-fetch checklist when applicationId changes
+  // Refresh the required-document checklist whenever the application changes.
   useEffect(() => {
     if (applicationId) {
       fetchChecklist();
     }
   }, [applicationId]);
 
+  // Sends the selected file to the gateway using multipart form data.
   const uploadDocument = async (docType, file) => {
     if (!applicationId || !file) return;
 
@@ -170,6 +172,7 @@ function DocumentChecklist({
                       <label htmlFor={`file-${doc.documentType}`}>
                         Choose File
                       </label>
+                      {/* Keep upload explicit so the user can confirm the selected file before sending it. */}
                       {selectedDocType === doc.documentType && selectedFile && (
                         <button
                           type="button"

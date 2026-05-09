@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CapFinLoan.Admin.API.Controllers
 {
+	/// <summary>
+	/// Provides admin endpoints for retrieving and managing decisions on loan applications.
+	/// </summary>
 	[ApiController]
 	[Route("api/admin/decisions")]
 	[Authorize(Roles = "ADMIN")]
@@ -19,6 +22,9 @@ namespace CapFinLoan.Admin.API.Controllers
 			_repository = repository;
 		}
 
+		/// <summary>
+		/// Retrieves the decision record (if any) for a given application.
+		/// </summary>
 		[HttpGet("application/{applicationId:int}")]
 		public async Task<IActionResult> GetDecisionByApplication(int applicationId)
 		{

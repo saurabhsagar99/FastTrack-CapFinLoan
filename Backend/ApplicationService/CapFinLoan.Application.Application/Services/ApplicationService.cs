@@ -10,6 +10,10 @@ using CapFinLoan.Application.Persistence.Repositories;
 
 namespace CapFinLoan.Application.Application.Services
 {
+	/// <summary>
+	/// Manages the loan application lifecycle: draft creation, updates, submission, and status tracking.
+	/// Orchestrates the saga pattern for multi-service workflows via RabbitMQ events.
+	/// </summary>
 	public class ApplicationService:IApplicationService
 	{
 		private readonly IApplicationRepository _repository;
@@ -26,6 +30,9 @@ namespace CapFinLoan.Application.Application.Services
 			_messagePublisher = messagePublisher;
 		}
 
+		/// <summary>
+		/// Creates a new draft application for the signed-in applicant.
+		/// </summary>
 		public async Task<ApiResponse<ApplicationResponseDto>> CreateDraftAsync(string applicantId, CreateApplicationDto dto)
 		{
 			var application = new LoanApplication
@@ -51,6 +58,9 @@ namespace CapFinLoan.Application.Application.Services
 			return ApiResponse<ApplicationResponseDto>.Ok(MapToDto(created), "Draft created successfully.");
 		}
 
+		/// <summary>
+		/// Updates specific fields of a draft application. Applicants can only update their own drafts.
+		/// </summary>
 		public async Task<ApiResponse<ApplicationResponseDto>> UpdateDraftAsync(int id, string applicantId, UpdateApplicationDto dto)
 		{
 			var application = await _repository.GetByIdAsync(id);

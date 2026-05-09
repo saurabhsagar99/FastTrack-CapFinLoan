@@ -4,6 +4,9 @@ using CapFinLoan.Admin.Domain.Models;
 
 namespace CapFinLoan.Admin.Application.Services;
 
+/// <summary>
+/// Implements admin-side decision and reporting workflows.
+/// </summary>
 public class AdminService : IAdminService
 {
 	private readonly IDecisionRepository _repository;
@@ -20,6 +23,9 @@ public class AdminService : IAdminService
 		_messagePublisher = messagePublisher;
 	}
 
+	/// <summary>
+	/// Returns the current decision queue for admin review.
+	/// </summary>
 	public async Task<IEnumerable<object>> GetApplicationQueueAsync()
 	{
 		var decisions = await _repository.GetAllAsync();
@@ -33,6 +39,9 @@ public class AdminService : IAdminService
 		});
 	}
 
+	/// <summary>
+	/// Creates or updates a decision and publishes the corresponding event.
+	/// </summary>
 	public async Task<Decision> MakeDecisionAsync(int applicationId, DecisionDto dto, string adminEmail)
 	{
 		var existingDecision = await _repository.GetByApplicationIdAsync(applicationId);
@@ -77,6 +86,9 @@ public class AdminService : IAdminService
 		return savedDecision;
 	}
 
+	/// <summary>
+	/// Returns a simple summary for dashboard reporting.
+	/// </summary>
 	public async Task<object> GetReportsSummaryAsync()
 	{
 		var total = await _repository.CountAsync();
@@ -86,6 +98,9 @@ public class AdminService : IAdminService
 		return new { Total = total, Approved = approved, Rejected = rejected };
 	}
 
+	/// <summary>
+	/// Returns the user list shown in the admin console.
+	/// </summary>
 	public async Task<IEnumerable<object>> GetAllUsersAsync()
 	{
 		var users = await _userRepository.GetAllAsync();
@@ -101,6 +116,9 @@ public class AdminService : IAdminService
 		});
 	}
 
+	/// <summary>
+	/// Enables or disables a user account.
+	/// </summary>
 	public async Task<object> ToggleUserStatusAsync(string id, bool isActive)
 	{
 		var user = await _userRepository.GetByIdAsync(id);

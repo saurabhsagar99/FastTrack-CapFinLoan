@@ -1,3 +1,6 @@
+// Protected route guard: ensures the user is authenticated and has the required role.
+// Redirects unauthenticated users to login and unauthorized users to their dashboard.
+
 import { Navigate } from "react-router-dom";
 import { normalizeRole } from "../utils/appUtils";
 

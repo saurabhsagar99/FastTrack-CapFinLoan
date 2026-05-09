@@ -9,6 +9,9 @@ using CapFinLoan.Auth.Persistence.Repositories;
 
 namespace CapFinLoan.Auth.Application.Services
 {
+	/// <summary>
+	/// Handles user authentication workflows: login, registration, and token generation.
+	/// </summary>
 	public class AuthService:IAuthService
 	{
 		private readonly IUserRepository _userRepository;
@@ -25,6 +28,9 @@ namespace CapFinLoan.Auth.Application.Services
 			_messagePublisher = messagePublisher;
 		}
 
+		/// <summary>
+		/// Authenticates a user and returns a JWT token upon successful verification.
+		/// </summary>
 		public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
 		{
 			var user = await _userRepository.GetByEmailAsync(dto.Email)
@@ -45,6 +51,9 @@ namespace CapFinLoan.Auth.Application.Services
 			};
 		}
 
+		/// <summary>
+		/// Creates a new applicant account and publishes a registration event.
+		/// </summary>
 		public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
 		{
 			var existing = await _userRepository.GetByEmailAsync(dto.Email);

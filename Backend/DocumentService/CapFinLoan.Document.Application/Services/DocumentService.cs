@@ -5,6 +5,10 @@ using CapFinLoan.Document.Domain.Enums;
 
 namespace CapFinLoan.Document.Application.Services
 {
+	/// <summary>
+	/// Manages document upload, storage, verification, and retrieval workflows.
+	/// Enforces file-type and size limits; orchestrates admin verification.
+	/// </summary>
 	public class DocumentService : IDocumentService
 	{
 		private readonly IDocumentRepository _repository;
@@ -24,6 +28,9 @@ namespace CapFinLoan.Document.Application.Services
 			_messagePublisher = messagePublisher;
 		}
 
+		/// <summary>
+		/// Validates, stores, and indexes a document file. Replaces any existing document of the same type.
+		/// </summary>
 		public async Task<DocumentResponseDto> UploadDocumentAsync(UploadDocumentDto dto, string userId)
 		{
 			var ext = Path.GetExtension(dto.File.FileName).ToLowerInvariant();
@@ -72,6 +79,9 @@ namespace CapFinLoan.Document.Application.Services
 			return MapToDto(saved);
 		}
 
+		/// <summary>
+		/// Retrieves all documents for a given application.
+		/// </summary>
 		public async Task<IEnumerable<DocumentResponseDto>> GetDocumentsByApplicationAsync(int applicationId)
 		{
 			var docs = await _repository.GetByApplicationIdAsync(applicationId);

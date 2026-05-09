@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CapFinLoan.Admin.API.Controllers
 {
+	/// <summary>
+	/// Provides admin endpoints for dashboard reporting and summary statistics.
+	/// </summary>
 	[ApiController]
 	[Route("api/admin/reports")]
 	[Authorize(Roles = "ADMIN")]
@@ -17,6 +20,9 @@ namespace CapFinLoan.Admin.API.Controllers
 			_adminService = adminService;
 		}
 
+		/// <summary>
+		/// Returns summary statistics: total applications, approved count, rejected count.
+		/// </summary>
 		[HttpGet("summary")]
 		public async Task<IActionResult> GetSummary()
 		{

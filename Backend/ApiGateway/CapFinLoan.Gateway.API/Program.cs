@@ -1,3 +1,7 @@
+// API Gateway (Ocelot) entry point.
+// Routes authenticated requests to microservices (Auth, Application, Admin, Document).
+// Validates JWT tokens and enforces CORS for the React frontend.
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Ocelot.DependencyInjection;
@@ -6,10 +10,12 @@ using System.Text;
 
 public class Program
 {
+	// Initializes the Ocelot gateway with JWT authentication and CORS configuration.
 	private static async Task Main(string[] args)
 	{
 		var builder = WebApplication.CreateBuilder(args);
 
+		// Load Ocelot configuration from ocelot.json.
 		builder.Configuration
 			.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
 

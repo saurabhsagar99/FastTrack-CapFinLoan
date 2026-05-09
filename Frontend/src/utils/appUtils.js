@@ -31,6 +31,7 @@ function normalizeRole(role) {
     .toUpperCase();
 }
 
+// Safely reads the persisted session shape and falls back to an empty session.
 function parseStoredSession() {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
@@ -56,6 +57,7 @@ function parseJsonSafe(text) {
   }
 }
 
+// Recursively normalizes backend payload keys to the frontend's camelCase style.
 function normalizeKeys(value) {
   if (Array.isArray(value)) {
     return value.map(normalizeKeys);
@@ -75,6 +77,7 @@ function normalizeKeys(value) {
   return value;
 }
 
+// Unwraps ApiResponse<T>-style payloads while preserving the raw payload for callers.
 function unwrapData(payload) {
   if (payload && typeof payload === "object" && "data" in payload) {
     return payload.data;
@@ -82,6 +85,7 @@ function unwrapData(payload) {
   return payload;
 }
 
+// Centralized fetch wrapper for authenticated gateway calls.
 async function apiRequest({
   gateway,
   path,
@@ -126,6 +130,7 @@ async function apiRequest({
   };
 }
 
+// Maps application state text to a presentation tone used by the UI.
 function statusTone(value) {
   const status = String(value || "").toUpperCase();
   if (status.includes("APPROV")) return "approved";
@@ -134,6 +139,7 @@ function statusTone(value) {
   return "draft";
 }
 
+// Converts admin decision values into the application status vocabulary.
 function mapDecisionStatusToApplicationStatus(status) {
   const upper = String(status || "").toUpperCase();
   if (upper === "APPROVED") return "Approved";
@@ -142,6 +148,7 @@ function mapDecisionStatusToApplicationStatus(status) {
   return "Submitted";
 }
 
+// Formats values for display and safely handles invalid dates.
 function formatDateTime(value) {
   if (!value) return "-";
   const date = new Date(value);
@@ -149,6 +156,7 @@ function formatDateTime(value) {
   return date.toLocaleString();
 }
 
+// Splits a combined status note into admin remark and sanction terms.
 function parseStatusNoteParts(statusNote) {
   const text = String(statusNote || "").trim();
   if (!text) {
@@ -180,11 +188,13 @@ function parseStatusNoteParts(statusNote) {
   };
 }
 
+// Escapes a single CSV cell to keep exported rows valid.
 function escapeCsvCell(value) {
   const text = String(value ?? "");
   return `"${text.replace(/"/g, '""')}"`;
 }
 
+// Builds and downloads a CSV file from a 2D array of rows.
 function downloadCsv(filename, rows) {
   if (!rows?.length) return;
   const csv = rows

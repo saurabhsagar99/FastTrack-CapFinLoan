@@ -1,3 +1,6 @@
+// UserDashboard provides the applicant interface for creating, managing, and tracking loan applications.
+// Supports draft creation, document upload, submission, and status tracking with a chatbot assistant.
+
 import { useEffect, useState } from "react";
 import {
   apiRequest,
@@ -31,6 +34,7 @@ function UserDashboard({ gateway, session }) {
   const token = session.token;
   const [showDecisionDetails, setShowDecisionDetails] = useState(false);
 
+  // Fetch all applications for the signed-in user.
   const selectedApplication = applications.find(
     (app) => String(app.id) === String(selectedId),
   );
@@ -44,6 +48,7 @@ function UserDashboard({ gateway, session }) {
     selectedStatusParts.sanctionTerms ||
     "";
 
+  // Loads all applications for the current user and selects the first one if none is selected.
   const fetchApplications = async () => {
     const result = await apiRequest({
       gateway,
@@ -65,6 +70,8 @@ function UserDashboard({ gateway, session }) {
     return list;
   };
 
+
+  // Fetches the timeline status and latest decision for the selected application.
   const fetchStatus = async (applicationId) => {
     if (!applicationId) return;
 

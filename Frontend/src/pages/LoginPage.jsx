@@ -1,3 +1,7 @@
+// LoginPage handles user authentication.
+// Submits credentials to the auth gateway endpoint and stores JWT + role info in session.
+// Routes to the appropriate dashboard (admin vs applicant) based on role.
+
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
@@ -12,13 +16,14 @@ function LoginPage({ gateway, onLogin }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  // If accessing with ?as-other cleared session to allow new login
+  // Clear session if user is logging in as a different account.
   useEffect(() => {
     if (isLoginAsOther) {
       sessionStorage.removeItem(SESSION_KEY);
     }
   }, [isLoginAsOther]);
 
+  // Submits login credentials and routes to the user's dashboard on success.
   const submit = async (event) => {
     event.preventDefault();
     setBusy(true);

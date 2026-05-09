@@ -1,3 +1,6 @@
+// AdminDashboard provides the admin interface for reviewing applications, verifying documents,
+// making approval/rejection decisions, and generating reports.
+
 import { useEffect, useMemo, useState } from "react";
 import {
   apiRequest,
@@ -32,6 +35,7 @@ function AdminDashboard({ gateway, session }) {
 
   const token = session.token;
 
+  // Builds a CSV-exportable summary of all applications with decision statuses.
   const reportRows = useMemo(() => {
     const headers = [
       "Application Id",
@@ -65,6 +69,8 @@ function AdminDashboard({ gateway, session }) {
     return [headers, ...body];
   }, [applications, drafts]);
 
+
+  // Filters users by role and search keyword for the user management tab.
   const filteredUsers = useMemo(() => {
     const query = userSearch.trim().toLowerCase();
     return users.filter((user) => {

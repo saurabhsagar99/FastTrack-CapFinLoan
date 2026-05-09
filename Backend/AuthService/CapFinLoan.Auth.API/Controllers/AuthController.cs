@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CapFinLoan.Auth.API.Controllers;
 
+/// <summary>
+/// Provides user authentication endpoints: login and registration.
+/// </summary>
 [ApiController]
 [Route("api/auth")]
 public class AuthController : ControllerBase
@@ -13,6 +16,9 @@ public class AuthController : ControllerBase
 
 	public AuthController(IAuthService authService) => _authService = authService;
 
+	/// <summary>
+	/// Registers a new applicant account.
+	/// </summary>
 	[HttpPost("signup")]
 	public async Task<IActionResult> Register([FromBody] RegisterDto dto)
 	{
@@ -20,6 +26,9 @@ public class AuthController : ControllerBase
 		return Ok(ApiResponse<AuthResponseDto>.Ok(result, "Registration successful"));
 	}
 
+	/// <summary>
+	/// Authenticates a user and returns a JWT token.
+	/// </summary>
 	[HttpPost("login")]
 	public async Task<IActionResult> Login([FromBody] LoginDto dto)
 	{

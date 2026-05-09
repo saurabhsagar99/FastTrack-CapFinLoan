@@ -19,6 +19,9 @@ namespace CapFinLoan.Application.API.Controllers
 			_service = service;
 		}
 
+		/// <summary>
+		/// Returns the signed-in applicant's applications.
+		/// </summary>
 		[HttpGet("my")]
 		public async Task<IActionResult> GetMyApplications()
 		{
@@ -29,6 +32,9 @@ namespace CapFinLoan.Application.API.Controllers
 			return result.Success ? Ok(result) : BadRequest(result);
 		}
 
+		/// <summary>
+		/// Fetches a single application by its identifier.
+		/// </summary>
 		[HttpGet("{id:int}")]
 		public async Task<IActionResult> GetById(int id)
 		{
@@ -36,6 +42,9 @@ namespace CapFinLoan.Application.API.Controllers
 			return result.Success ? Ok(result) : NotFound(result);
 		}
 
+		/// <summary>
+		/// Returns the admin-facing application queue.
+		/// </summary>
 		[HttpGet]
 		[Authorize(Roles = "ADMIN")]
 		public async Task<IActionResult> GetAll()
@@ -44,6 +53,9 @@ namespace CapFinLoan.Application.API.Controllers
 			return Ok(result);
 		}
 
+		/// <summary>
+		/// Creates a draft application for the current applicant.
+		/// </summary>
 		[HttpPost]
 		public async Task<IActionResult> CreateDraft([FromBody] CreateApplicationDto dto)
 		{
@@ -58,6 +70,9 @@ namespace CapFinLoan.Application.API.Controllers
 				: BadRequest(result);
 		}
 
+		/// <summary>
+		/// Updates a saved draft application.
+		/// </summary>
 		[HttpPut("{id:int}")]
 		public async Task<IActionResult> UpdateDraft(int id, [FromBody] UpdateApplicationDto dto)
 		{
@@ -70,6 +85,9 @@ namespace CapFinLoan.Application.API.Controllers
 			return result.Success ? Ok(result) : BadRequest(result);
 		}
 
+		/// <summary>
+		/// Builds a simple timeline view of the current application status.
+		/// </summary>
 		[HttpGet("{id:int}/status")]
 		public async Task<IActionResult> GetApplicationStatus(int id)
 		{
@@ -94,6 +112,9 @@ namespace CapFinLoan.Application.API.Controllers
 			}));
 		}
 
+		/// <summary>
+		/// Applies an admin status update to an application.
+		/// </summary>
 		[HttpPut("{id:int}/status")]
 		[Authorize(Roles = "ADMIN")]
 		public async Task<IActionResult> UpdateStatusByAdmin(int id, [FromBody] UpdateApplicationStatusDto dto)
@@ -104,6 +125,9 @@ namespace CapFinLoan.Application.API.Controllers
 			return result.Success ? Ok(result) : BadRequest(result);
 		}
 
+		/// <summary>
+		/// Submits a draft application for review.
+		/// </summary>
 		[HttpPost("{id:int}/submit")]
 		public async Task<IActionResult> Submit(int id)
 		{

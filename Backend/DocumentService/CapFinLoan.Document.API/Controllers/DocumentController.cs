@@ -7,6 +7,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CapFinLoan.Document.API.Controllers
 {
+	/// <summary>
+	/// Provides document upload, retrieval, verification, and deletion endpoints.
+	/// All endpoints require authentication.
+	/// </summary>
 	[ApiController]
 	[Route("api/[controller]")]
 	[Authorize]
@@ -19,6 +23,10 @@ namespace CapFinLoan.Document.API.Controllers
 			_documentService = documentService;
 		}
 
+		/// <summary>
+		/// Uploads a document (PDF, JPG, PNG) for a specific application.
+		/// Validates file type and size before storage.
+		/// </summary>
 		[HttpPost("upload")]
 		public async Task<IActionResult> Upload([FromForm] UploadDocumentDto dto)
 		{
@@ -27,6 +35,9 @@ namespace CapFinLoan.Document.API.Controllers
 			return Ok(ApiResponse<DocumentResponseDto>.Ok(result, "Document uploaded successfully."));
 		}
 
+		/// <summary>
+		/// Retrieves all documents for a given application.
+		/// </summary>
 		[HttpGet("application/{applicationId}")]
 		public async Task<IActionResult> GetByApplication(int applicationId)
 		{
@@ -34,6 +45,9 @@ namespace CapFinLoan.Document.API.Controllers
 			return Ok(ApiResponse<IEnumerable<DocumentResponseDto>>.Ok(docs));
 		}
 
+		/// <summary>
+		/// Returns the checklist of required documents and their upload status.
+		/// </summary>
 		[HttpGet("application/{applicationId}/required")]
 		public async Task<IActionResult> GetRequiredDocumentsChecklist(int applicationId)
 		{
@@ -41,6 +55,9 @@ namespace CapFinLoan.Document.API.Controllers
 			return Ok(ApiResponse<RequiredDocumentsChecklistDto>.Ok(checklist, "Required documents checklist retrieved."));
 		}
 
+		/// <summary>
+		/// Admin endpoint to verify/reject a document with optional remarks.
+		/// </summary>
 		[HttpPut("{docId}/verify")]
 		[Authorize(Roles = "ADMIN")]
 		public async Task<IActionResult> Verify(int docId, [FromBody] VerifyDocumentDto dto)
@@ -49,6 +66,9 @@ namespace CapFinLoan.Document.API.Controllers
 			return Ok(ApiResponse<DocumentResponseDto>.Ok(result, "Document verification updated."));
 		}
 
+		/// <summary>
+		/// Downloads a document file. Admins can download any document; applicants can only download their own.
+		/// </summary>
 		[HttpGet("{docId}/download")]
 		public async Task<IActionResult> Download(int docId)
 		{
@@ -67,6 +87,9 @@ namespace CapFinLoan.Document.API.Controllers
 			return File(file.Content, file.ContentType, file.FileName);
 		}
 
+		/// <summary>
+		/// Deletes a document. Only the uploader or an admin can delete.
+		/// </summary>
 		[HttpDelete("{docId}")]
 		public async Task<IActionResult> Delete(int docId)
 		{

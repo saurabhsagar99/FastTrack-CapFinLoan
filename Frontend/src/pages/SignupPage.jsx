@@ -1,3 +1,7 @@
+// SignupPage handles new applicant registration.
+// Validates form inputs and creates an account via the auth gateway endpoint.
+// Routes to login page on successful registration.
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
@@ -15,6 +19,7 @@ function SignupPage({ gateway }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Submits the signup form to create a new applicant account.
   const submit = async (event) => {
     event.preventDefault();
     setBusy(true);

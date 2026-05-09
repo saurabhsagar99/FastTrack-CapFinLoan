@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CapFinLoan.Admin.API
 {
+	/// <summary>
+	/// Application entry point for the Admin API.
+	/// </summary>
 	public class Program
 	{
 		public static void Main(string[] args)
