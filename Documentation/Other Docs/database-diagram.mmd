@@ -1,0 +1,71 @@
+erDiagram
+    USERS {
+        guid Id PK
+        string Name
+        string Email UK
+        string Phone
+        string PasswordHash
+        string Role
+        boolean IsActive
+        datetime CreatedAt
+    }
+
+    LOAN_APPLICATIONS {
+        int Id PK
+        string ApplicantId FK
+        string ApplicantName
+        string ApplicantEmail
+        string Phone
+        string Address
+        datetime DateOfBirth
+        string EmployerName
+        string EmploymentType
+        decimal MonthlyIncome
+        decimal LoanAmount
+        int TenureMonths
+        string LoanPurpose
+        string Status
+        string StatusNote
+        datetime CreatedAt
+        datetime UpdatedAt
+        datetime SubmittedAt
+    }
+
+    DOCUMENTS {
+        int Id PK
+        int ApplicationId FK
+        string UserId FK
+        string FileName
+        string FilePath
+        string FileType
+        long FileSize
+        string DocumentType
+        boolean IsVerified
+        string VerificationRemarks
+        datetime UploadedAt
+        datetime VerifiedAt
+    }
+
+    DECISIONS {
+        int Id PK
+        int ApplicationId FK
+        string AdminEmail
+        string Status
+        string Remarks
+        string SanctionTerms
+        datetime DecisionDate
+    }
+
+    SAGA_STATES {
+        int Id PK
+        int ApplicationId FK
+        string CurrentStep
+        string LastEventName
+        string LastMessage
+    }
+
+    USERS ||--o{ LOAN_APPLICATIONS : applicantId
+    USERS ||--o{ DOCUMENTS : userId
+    LOAN_APPLICATIONS ||--o{ DOCUMENTS : applicationId
+    LOAN_APPLICATIONS ||--|| DECISIONS : applicationId
+    LOAN_APPLICATIONS ||--|| SAGA_STATES : applicationId

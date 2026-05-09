@@ -1,0 +1,35 @@
+flowchart TB
+    Frontend[Client Apps\nReact Web / Mobile UI]
+    Gateway[API Gateway\nOcelot / YARP]
+    Auth[Auth Service]
+    Application[Application Service]
+    Admin[Admin Service]
+    Document[Document Service]
+    RabbitMQ[(RabbitMQ Event Bus)]
+    AuthDb[(Auth DB)]
+    ApplicationDb[(Application DB)]
+    AdminDb[(Admin DB)]
+    DocumentDb[(Document DB)]
+    FileStore[(File Storage\n/app/uploads)]
+
+    Frontend -->|HTTP REST| Gateway
+    Gateway -->|Auth routes| Auth
+    Gateway -->|Application routes| Application
+    Gateway -->|Admin routes| Admin
+    Gateway -->|Document routes| Document
+
+    Auth -->|EF Core| AuthDb
+    Application -->|EF Core| ApplicationDb
+    Admin -->|EF Core| AdminDb
+    Document -->|EF Core| DocumentDb
+    Document -->|Save files| FileStore
+
+    Auth -->|JWT login / token issuing| Frontend
+
+    Application <-->|application.submitted\napplication.status.changed| RabbitMQ
+    Document <-->|document.status.updated| RabbitMQ
+    Admin <-->|admin.decision.created| RabbitMQ
+
+    RabbitMQ -->|Consumes document.status.updated\nand admin.decision.created| Application
+    RabbitMQ -->|Consumes application.submitted| Admin
+    RabbitMQ -->|Consumes application.submitted\nfor checklist / review context| Document

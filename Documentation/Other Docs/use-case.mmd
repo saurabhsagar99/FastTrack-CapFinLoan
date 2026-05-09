@@ -1,0 +1,28 @@
+flowchart LR
+    Applicant((Applicant))
+    Admin((Admin))
+
+    subgraph System[CapFinLoan Loan Workflow]
+        UC1([Sign up / log in])
+        UC2([Create / update draft application])
+        UC3([Upload required documents])
+        UC4([Submit application])
+        UC5([Track application status])
+        UC6([View application queue])
+        UC7([Verify / reject documents])
+        UC8([Review application])
+        UC9([Approve with sanction / interest terms])
+        UC10([Reject application])
+    end
+
+    Applicant --> UC1
+    Applicant --> UC2
+    Applicant --> UC3
+    Applicant --> UC4
+    Applicant --> UC5
+
+    Admin --> UC6
+    Admin --> UC7
+    Admin --> UC8
+    Admin --> UC9
+    Admin --> UC10
