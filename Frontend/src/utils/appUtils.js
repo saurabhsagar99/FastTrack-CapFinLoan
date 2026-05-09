@@ -217,4 +217,5 @@ export {
   parseStatusNoteParts,
   parseStoredSession,
   statusTone,
+  unwrapData,
 };
