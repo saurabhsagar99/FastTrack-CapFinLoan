@@ -4,6 +4,7 @@ using CapFinLoan.Document.Application.DTOs;
 using CapFinLoan.Document.Application.Interfaces;
 using CapFinLoan.Document.Application.Services;
 using CapFinLoan.Document.Domain.Models;
+using CapFinLoan.Document.Domain.Enums;
 using CapFinLoan.Document.Persistence.Repositories;
 using Microsoft.AspNetCore.Http;
 
@@ -48,7 +49,7 @@ public class DocumentServiceTests
         {
             File = mockFile.Object,
             ApplicationId = applicationId,
-            DocumentType = "ID_PROOF"
+            DocumentType = "KYC"
         };
 
         _mockFileStorage.Setup(fs => fs.SaveFileAsync(
@@ -69,7 +70,7 @@ public class DocumentServiceTests
             FilePath = filePath,
             FileType = ".pdf",
             FileSize = 1024,
-            DocumentType = "ID_PROOF",
+            DocumentType = DocumentType.KYC,
             IsVerified = false,
             UploadedAt = DateTime.UtcNow
         };
@@ -83,7 +84,7 @@ public class DocumentServiceTests
         // Assert
         Assert.That(result, Is.Not.Null);
         Assert.That(result.FileName, Is.EqualTo(fileName));
-        Assert.That(result.DocumentType, Is.EqualTo("ID_PROOF"));
+        Assert.That(result.DocumentType, Is.EqualTo("KYC"));
         _mockFileStorage!.Verify(fs => fs.SaveFileAsync(
             It.IsAny<Stream>(),
             It.IsAny<string>(),
@@ -104,7 +105,7 @@ public class DocumentServiceTests
         {
             File = mockFile.Object,
             ApplicationId = 1,
-            DocumentType = "ID_PROOF"
+            DocumentType = "KYC"
         };
 
         // Act & Assert
@@ -126,7 +127,7 @@ public class DocumentServiceTests
         {
             File = mockFile.Object,
             ApplicationId = 1,
-            DocumentType = "ID_PROOF"
+            DocumentType = "KYC"
         };
 
         // Act & Assert
