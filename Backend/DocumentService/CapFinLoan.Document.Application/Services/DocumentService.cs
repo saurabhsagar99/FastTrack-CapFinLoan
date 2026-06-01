@@ -88,6 +88,9 @@ namespace CapFinLoan.Document.Application.Services
 			return docs.Select(MapToDto);
 		}
 
+		/// <summary>
+		/// Retrieves a checklist of required documents for a given application, indicating which documents are uploaded and their verification status.
+		/// </summary>
 		public async Task<RequiredDocumentsChecklistDto> GetRequiredDocumentsChecklistAsync(int applicationId)
 		{
 			var requiredDocTypes = new[] { DocumentType.KYC, DocumentType.AddressProof, DocumentType.IncomeProof, DocumentType.BankStatement };
@@ -116,6 +119,9 @@ namespace CapFinLoan.Document.Application.Services
 			return checklist;
 		}
 
+		/// <summary>
+		/// Verifies or rejects a document based on admin review, updates the document status, and publishes a status update event.
+		/// </summary>
 		public async Task<DocumentResponseDto> VerifyDocumentAsync(int docId, VerifyDocumentDto dto)
 		{
 			var doc = await _repository.GetByIdAsync(docId)
@@ -143,6 +149,9 @@ namespace CapFinLoan.Document.Application.Services
 			return MapToDto(doc);
 		}
 
+		/// <summary>
+		/// Retrieves the file content of a document for download, with access control based on user permissions.
+		/// </summary>
 		public async Task<DocumentFileDto> GetDocumentFileAsync(int docId, string userId, bool isAdmin)
 		{
 			var doc = isAdmin
@@ -181,6 +190,9 @@ namespace CapFinLoan.Document.Application.Services
 			};
 		}
 
+		/// <summary>
+		/// Deletes a document uploaded by the specified user, including the physical file.
+		/// </summary>
 		public async Task<bool> DeleteDocumentAsync(int docId, string userId)
 		{
 			var doc = await _repository.GetByIdAndUserAsync(docId, userId);
@@ -191,6 +203,9 @@ namespace CapFinLoan.Document.Application.Services
 			return true;
 		}
 
+		/// <summary>
+		/// Maps a DocumentEntity to a DocumentResponseDto for API responses.
+		/// </summary>
 		private static DocumentResponseDto MapToDto(DocumentEntity d) => new()
 		{
 			Id = d.Id,
@@ -203,6 +218,9 @@ namespace CapFinLoan.Document.Application.Services
 			UploadedAt = d.UploadedAt
 		};
 
+		/// <summary>
+		/// Gets the user-friendly display name for a document type.
+		/// </summary>
 		private static string GetDocumentDisplayName(DocumentType documentType) => documentType switch
 		{
 			DocumentType.KYC => "KYC Document (Aadhar/PAN Card)",
@@ -212,6 +230,9 @@ namespace CapFinLoan.Document.Application.Services
 			_ => documentType.ToString()
 		};
 
+		/// <summary>
+		/// Resolves the MIME content type based on the file extension.
+		/// </summary>
 		private static string ResolveContentType(string ext)
 		{
 			return ext.ToLowerInvariant() switch
